@@ -1,4 +1,4 @@
-use crate::lexer::token::Token;
+use crate::lexer::token::{Token, LiteralType};
 
 pub struct Lexer {
     input: Vec<u8>,
@@ -43,6 +43,9 @@ impl Lexer {
                     Token::Bang
                 }
             }
+            b'*' => Token::Asterisk,
+            b'/' => Token::ForwardSlash,
+            b'%' => Token::Modulo,
             b'<' => {
                 if self.peek() == b'=' {
                     self.read_char();
@@ -59,8 +62,6 @@ impl Lexer {
                     Token::GreaterThan
                 }
             }
-            b'*' => Token::Asterisk,
-            b'/' => Token::ForwardSlash,
             b'=' => {
                 if self.peek() == b'=' {
                     self.read_char();
@@ -83,7 +84,9 @@ impl Lexer {
                     _ => Token::Ident(ident),
                 };
             }
-            b'0'..=b'9' => return Token::Int(self.read_int()),
+            // b'0'..=b'9' => return Token::Int(self.read_int()),
+            b'0'..=b'9' => return Token::Literal { kind: LiteralType::Int, val: self.read_int() },
+            b'"' => return Token::Literal { kind: LiteralType::Str, val: self.read_str() },
             0 => Token::Eof,
             _ => Token::Illegal,
         };
@@ -113,29 +116,36 @@ impl Lexer {
 
     fn read_ident(&mut self) -> String {
         let pos = self.position;
-        // let mut ident = String::new();
 
         while self.ch.is_ascii_alphabetic() || self.ch == b'_' || self.ch.is_ascii_digit() {
-            // ident.push(self.ch.into());
             self.read_char();
         }
 
         // because we only support ASCII characters
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
-        // ident
     }
 
     fn read_int(&mut self) -> String {
         let pos = self.position;
-        // let mut num = String::new();
 
         while self.ch.is_ascii_digit() {
-            // num.push(self.ch.into());
             self.read_char();
         }
 
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
-        // num
+    }
+
+    fn read_str(&mut self) -> String {
+        self.read_char(); // skip the opening "
+        let pos = self.position;
+
+        while self.ch != b'"' {
+            self.read_char();
+        }
+
+        self.read_char(); // skip the closing "
+
+        String::from_utf8_lossy(&self.input[pos..self.position - 1]).to_string()
     }
 
     fn skip_whitespace(&mut self) {
@@ -149,6 +159,8 @@ impl Lexer {
 mod test {
     use std::fs;
 
+    use crate::lexer::token::LiteralType;
+
     use super::{Lexer, Token};
 
     fn validate_tokens(lexer: &mut Lexer, tokens: Vec<Token>) {
@@ -161,7 +173,7 @@ mod test {
 
     #[test]
     fn will_you_lex() {
-        let input = "=+(){},;";
+        let input = "=+(){},;%";
         let mut lexer = Lexer::new(input.into());
 
         let tokens = vec![
@@ -173,6 +185,7 @@ mod test {
             Token::RCurly,
             Token::Comma,
             Token::Semicolon,
+            Token::Modulo,
         ];
 
         validate_tokens(&mut lexer, tokens)
@@ -188,6 +201,7 @@ mod test {
         };
 
         let result = add(five, ten);
+        let greet = "Hi, my age is 10";
         "#;
 
         let mut lexer = Lexer::new(input.into());
@@ -196,12 +210,12 @@ mod test {
             Token::Let,
             Token::Ident(String::from("five")),
             Token::Assign,
-            Token::Int(String::from("5")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("5") },
             Token::Semicolon,
             Token::Let,
             Token::Ident(String::from("ten")),
             Token::Assign,
-            Token::Int(String::from("10")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("10") },
             Token::Semicolon,
             Token::Let,
             Token::Ident(String::from("add")),
@@ -227,6 +241,11 @@ mod test {
             Token::Comma,
             Token::Ident(String::from("ten")),
             Token::RParen,
+            Token::Semicolon,
+            Token::Let,
+            Token::Ident(String::from("greet")),
+            Token::Assign,
+            Token::Literal { kind: LiteralType::Str, val: String::from("Hi, my age is 10") },
             Token::Semicolon,
             Token::Eof,
         ];
@@ -261,12 +280,12 @@ mod test {
             Token::Let,
             Token::Ident(String::from("five")),
             Token::Assign,
-            Token::Int(String::from("5")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("5") },
             Token::Semicolon,
             Token::Let,
             Token::Ident(String::from("ten")),
             Token::Assign,
-            Token::Int(String::from("10")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("10") },
             Token::Semicolon,
             Token::Let,
             Token::Ident(String::from("add")),
@@ -298,19 +317,19 @@ mod test {
             Token::Minus,
             Token::ForwardSlash,
             Token::Asterisk,
-            Token::Int(String::from("5")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("5") },
             Token::Semicolon,
-            Token::Int(String::from("5")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("5") },
             Token::LessThan,
-            Token::Int(String::from("10")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("10") },
             Token::GreaterThan,
-            Token::Int(String::from("5")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("5") },
             Token::Semicolon,
             Token::If,
             Token::LParen,
-            Token::Int(String::from("5")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("5") },
             Token::LessThan,
-            Token::Int(String::from("10")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("10") },
             Token::RParen,
             Token::LCurly,
             Token::Return,
@@ -323,17 +342,17 @@ mod test {
             Token::False,
             Token::Semicolon,
             Token::RCurly,
-            Token::Int(String::from("5")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("5") },
             Token::LessThanEqual,
-            Token::Int(String::from("10")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("10") },
             Token::Semicolon,
-            Token::Int(String::from("10")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("10") },
             Token::Equal,
-            Token::Int(String::from("10")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("10") },
             Token::Semicolon,
-            Token::Int(String::from("10")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("10") },
             Token::NotEqual,
-            Token::Int(String::from("9")),
+            Token::Literal { kind: LiteralType::Int, val: String::from("9") },
             Token::Semicolon,
             Token::Eof,
         ];
@@ -355,12 +374,12 @@ mod test {
             Token::Let,
             Token::Ident("num1".into()),
             Token::Assign,
-            Token::Int("69".into()),
+            Token::Literal { kind: LiteralType::Int, val: String::from("69") },
             Token::Semicolon,
             Token::Let,
             Token::Ident("num2".into()),
             Token::Assign,
-            Token::Int("420".into()),
+            Token::Literal { kind: LiteralType::Int, val: String::from("420") },
             Token::Semicolon,
             Token::Let,
             Token::Ident("bigger_of_the_2".into()),

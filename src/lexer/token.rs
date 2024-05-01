@@ -3,7 +3,8 @@ use std::fmt::Display;
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Ident(String),
-    Int(String),
+    // Int(String),
+    Literal { kind: LiteralType, val: String },
 
     // Operators
     Assign, // =
@@ -11,6 +12,7 @@ pub enum Token {
     Plus, // +
     Minus, // -
     ForwardSlash, // /
+    Modulo, // %
     Asterisk, // *
     Equal, // ==
     NotEqual, // !=
@@ -46,13 +48,15 @@ impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Token::Ident(x) => write!(f, "Ident({})", x),
-            Token::Int(x) => write!(f, "Int({})", x),
+            // Token::Int(x) => write!(f, "Int({})", x),
+            Token::Literal { kind, val } => write!(f, "{:?} Literal({})", kind, val),
             Token::Assign => write!(f, "Assign"),
             Token::Bang => write!(f, "Bang"),
             Token::Minus => write!(f, "Minus"),
             Token::Plus => write!(f, "Plus"),
-            Token::ForwardSlash => write!(f, "ForwardSlash"),
             Token::Asterisk => write!(f, "Asterisk"),
+            Token::ForwardSlash => write!(f, "ForwardSlash"),
+            Token::Modulo => write!(f, "Modulo"),
             Token::Equal => write!(f, "Equal"),
             Token::NotEqual => write!(f, "NotEqual"),
             Token::LessThan => write!(f, "LessThan"),
@@ -76,6 +80,23 @@ impl Display for Token {
             Token::False => write!(f, "False"),
             Token::Eof => write!(f, "Eof"),
             Token::Illegal => write!(f, "Illegal"),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum LiteralType {
+    Int,
+    Str,
+    Bool,
+}
+
+impl Display for LiteralType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LiteralType::Int => write!(f, "Int"),
+            LiteralType::Str => write!(f, "Str"),
+            LiteralType::Bool => write!(f, "Bool"),
         }
     }
 }

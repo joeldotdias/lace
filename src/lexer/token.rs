@@ -1,9 +1,11 @@
 use std::fmt::Display;
 
+/// Reprsents the parsed token type.
+/// In case of a string or integer literal,
+/// we store the datatype and value
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Ident(String),
-    // Int(String),
     Literal { kind: LiteralType, val: String },
 
     // Operators
@@ -48,7 +50,6 @@ impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Token::Ident(x) => write!(f, "Ident({})", x),
-            // Token::Int(x) => write!(f, "Int({})", x),
             Token::Literal { kind, val } => write!(f, "{:?} Literal({})", kind, val),
             Token::Assign => write!(f, "Assign"),
             Token::Bang => write!(f, "Bang"),
@@ -88,7 +89,6 @@ impl Display for Token {
 pub enum LiteralType {
     Int,
     Str,
-    Bool,
 }
 
 impl Display for LiteralType {
@@ -96,7 +96,6 @@ impl Display for LiteralType {
         match self {
             LiteralType::Int => write!(f, "Int"),
             LiteralType::Str => write!(f, "Str"),
-            LiteralType::Bool => write!(f, "Bool"),
         }
     }
 }

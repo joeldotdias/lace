@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use lace::lexer::{lexer::Lexer, token::Token};
+use lace::lexer::{Lexer, token::Token};
 
 const LEXABLES: &str = r#"
         let five = 5;

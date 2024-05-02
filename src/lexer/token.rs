@@ -85,9 +85,12 @@ impl Display for Token {
     }
 }
 
+/// Valid datatypes
 #[derive(Debug, PartialEq)]
 pub enum LiteralType {
+    /// 64 bit signed integer
     Int,
+    /// String
     Str,
 }
 

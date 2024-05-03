@@ -2,7 +2,9 @@ use std::fs;
 
 use super::{Lexer, LiteralType, Token};
 
-fn validate_tokens(lexer: &mut Lexer, tokens: Vec<Token>) {
+fn validate_tokens(input: &str, tokens: Vec<Token>) {
+    let mut lexer = Lexer::new(input.into());
+
     for token in tokens {
         let next_token = lexer.next_token();
         println!("expected: {:?}, received {:?}", token, next_token);
@@ -13,7 +15,6 @@ fn validate_tokens(lexer: &mut Lexer, tokens: Vec<Token>) {
 #[test]
 fn will_you_lex() {
     let input = "=+(){},;%";
-    let mut lexer = Lexer::new(input.into());
 
     let tokens = vec![
         Token::Assign,
@@ -27,7 +28,7 @@ fn will_you_lex() {
         Token::Modulo,
     ];
 
-    validate_tokens(&mut lexer, tokens)
+    validate_tokens(input, tokens)
 }
 
 #[test]
@@ -43,8 +44,6 @@ fn will_you_lex_some_code() {
         let greet = "Hi, my age is 10";
         let flag = true;
         "#;
-
-    let mut lexer = Lexer::new(input.into());
 
     let tokens = vec![
         Token::Let,
@@ -104,7 +103,7 @@ fn will_you_lex_some_code() {
         Token::Eof,
     ];
 
-    validate_tokens(&mut lexer, tokens)
+    validate_tokens(input, tokens)
 }
 
 #[test]
@@ -127,8 +126,6 @@ fn will_you_lex_more_code() {
         10 == 10;
         10 != 9;
         "#;
-
-    let mut lexer = Lexer::new(input.into());
 
     let tokens = vec![
         Token::Let,
@@ -253,13 +250,13 @@ fn will_you_lex_more_code() {
         Token::Eof,
     ];
 
-    validate_tokens(&mut lexer, tokens)
+    validate_tokens(input, tokens)
 }
 
 #[test]
 fn will_you_lex_from_a_file() {
-    let input = fs::read_to_string("examples/basic.lace").unwrap();
-    let mut lexer = Lexer::new(input);
+    let contents = fs::read_to_string("examples/basic.lace").unwrap();
+    let input = contents.as_str();
 
     let tokens = vec![
         Token::Function,
@@ -310,13 +307,46 @@ fn will_you_lex_from_a_file() {
         Token::Eof,
     ];
 
-    validate_tokens(&mut lexer, tokens)
+    validate_tokens(input, tokens)
+}
+
+#[test]
+fn will_you_escape() {
+    // This test checks for two things
+    // Will a character after a backslash be properly excaped
+    // Will a backslash after a backslash also be excaped
+
+    let input = r#"
+        let msg = "He said, \"Lemons taste good.\"";
+        let other = "Escape the \\escape";
+    "#;
+
+    let tokens = vec![
+        Token::Let,
+        Token::Ident("msg".into()),
+        Token::Assign,
+        Token::Literal {
+            kind: LiteralType::Str,
+            val: String::from(r#"He said, "Lemons taste good.""#)
+        },
+        Token::Semicolon,
+        Token::Let,
+        Token::Ident("other".into()),
+        Token::Assign,
+        Token::Literal {
+            kind: LiteralType::Str,
+            val: String::from(r#"Escape the \escape"#)
+        },
+        Token::Semicolon,
+        Token::Eof,
+    ];
+
+    validate_tokens(input, tokens)
 }
 
 #[test]
 fn detect_illegal() {
     let input = "]+!⭐🚦";
-    let mut lexer = Lexer::new(input.into());
 
     let tokens = vec![
         Token::RBracket,
@@ -326,5 +356,5 @@ fn detect_illegal() {
         Token::Illegal,
     ];
 
-    validate_tokens(&mut lexer, tokens)
+    validate_tokens(input, tokens)
 }

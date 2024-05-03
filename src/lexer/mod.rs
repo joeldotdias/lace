@@ -3,7 +3,7 @@ pub mod token;
 #[cfg(test)]
 mod tests;
 
-use crate::lexer::token::{Token, LiteralType};
+use crate::lexer::token::{LiteralType, Token};
 
 /// Iterator over the code
 /// Acts as a cursor over the input
@@ -15,7 +15,7 @@ pub struct Lexer {
     /// next position to be read
     read_position: usize,
     /// current character under examination as a byte
-    ch: u8,
+    curr_ch: u8,
 }
 
 impl Lexer {
@@ -24,7 +24,7 @@ impl Lexer {
             input: input.into_bytes(),
             position: 0,
             read_position: 0,
-            ch: 0,
+            curr_ch: 0,
         };
 
         lexer.read_char();
@@ -35,7 +35,7 @@ impl Lexer {
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
-        let token = match self.ch {
+        let token = match self.curr_ch {
             b'{' => Token::LCurly,
             b'}' => Token::RCurly,
             b'(' => Token::LParen,
@@ -95,8 +95,18 @@ impl Lexer {
                     _ => Token::Ident(ident),
                 };
             }
-            b'0'..=b'9' => return Token::Literal { kind: LiteralType::Int, val: self.read_int() },
-            b'"' => return Token::Literal { kind: LiteralType::Str, val: self.read_str() },
+            b'0'..=b'9' => {
+                return Token::Literal {
+                    kind: LiteralType::Int,
+                    val: self.read_int(),
+                }
+            }
+            b'"' => {
+                return Token::Literal {
+                    kind: LiteralType::Str,
+                    val: self.read_str(),
+                }
+            }
             0 => Token::Eof,
             _ => Token::Illegal,
         };
@@ -104,16 +114,6 @@ impl Lexer {
         self.read_char();
 
         token
-    }
-
-    fn read_char(&mut self) {
-        if self.read_position >= self.input.len() {
-            self.ch = 0; // set ch to 0 if we reach end of input
-        } else {
-            self.ch = self.input[self.read_position];
-        }
-        self.position = self.read_position;
-        self.read_position += 1;
     }
 
     fn peek(&self) -> u8 {
@@ -124,10 +124,20 @@ impl Lexer {
         }
     }
 
+    fn read_char(&mut self) {
+        if self.read_position >= self.input.len() {
+            self.curr_ch = 0; // set ch to 0 if we reach end of input
+        } else {
+            self.curr_ch = self.input[self.read_position];
+        }
+        self.position = self.read_position;
+        self.read_position += 1;
+    }
+
     fn read_ident(&mut self) -> String {
         let pos = self.position;
 
-        while self.ch.is_ascii_alphabetic() || self.ch == b'_' || self.ch.is_ascii_digit() {
+        while self.curr_ch.is_ascii_alphabetic() || self.curr_ch == b'_' || self.curr_ch.is_ascii_digit() {
             self.read_char();
         }
 
@@ -138,7 +148,7 @@ impl Lexer {
     fn read_int(&mut self) -> String {
         let pos = self.position;
 
-        while self.ch.is_ascii_digit() {
+        while self.curr_ch.is_ascii_digit() {
             self.read_char();
         }
 
@@ -147,19 +157,26 @@ impl Lexer {
 
     fn read_str(&mut self) -> String {
         self.read_char(); // skip the opening "
-        let pos = self.position;
 
-        while self.ch != b'"' {
+        let mut l_str = String::new();
+
+        while self.curr_ch != b'"' {
+            if self.curr_ch == b'\\' {
+                // if a backslash is found we skip it
+                // and read the next character as is
+                self.read_char();
+            }
+            l_str.push(self.curr_ch.into());
             self.read_char();
         }
 
         self.read_char(); // skip the closing "
 
-        String::from_utf8_lossy(&self.input[pos..self.position - 1]).to_string()
+        l_str
     }
 
     fn skip_whitespace(&mut self) {
-        while self.ch.is_ascii_whitespace() {
+        while self.curr_ch.is_ascii_whitespace() {
             self.read_char();
         }
     }

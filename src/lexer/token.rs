@@ -3,7 +3,7 @@ use std::fmt::Display;
 /// Reprsents the parsed token type.
 /// In case of a string or integer literal,
 /// we store the datatype and value
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Ident(String),
     Literal { kind: LiteralType, val: String },
@@ -22,6 +22,8 @@ pub enum Token {
     GreaterThan, // >
     LessThanEqual, // <=
     GreaterThanEqual, // >=
+    And, // &&
+    Or, // ||
 
     // Delimiters
     Comma, // ,
@@ -50,7 +52,7 @@ impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Token::Ident(x) => write!(f, "Ident({})", x),
-            Token::Literal { kind, val } => write!(f, "{:?} Literal({})", kind, val),
+            Token::Literal { kind, val } => write!(f, "{} Literal({})", kind, val),
             Token::Assign => write!(f, "Assign"),
             Token::Bang => write!(f, "Bang"),
             Token::Minus => write!(f, "Minus"),
@@ -64,6 +66,8 @@ impl Display for Token {
             Token::GreaterThan => write!(f, "GreaterThan"),
             Token::LessThanEqual => write!(f, "LessThanEqual"),
             Token::GreaterThanEqual => write!(f, "GreaterThanEqual"),
+            Token::Or => write!(f, "Or"),
+            Token::And => write!(f, "And"),
             Token::Comma => write!(f, "Comma"),
             Token::Semicolon => write!(f, "Semicolon"),
             Token::LParen => write!(f, "Lparen"),
@@ -85,8 +89,14 @@ impl Display for Token {
     }
 }
 
+impl Token {
+    pub fn reached_eof(&self) -> bool {
+        *self == Token::Eof
+    }
+}
+
 /// Valid datatypes
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LiteralType {
     /// 64 bit signed integer
     Int,

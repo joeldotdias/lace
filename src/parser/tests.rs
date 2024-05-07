@@ -1,0 +1,101 @@
+use crate::{
+    lexer::{token::Token, Lexer},
+    parser::{
+        ast::{Expression, Program},
+        nodes::{IdentNode, PrimitiveNode},
+        statement::{LetStatement, Statement},
+        Parser,
+    },
+};
+
+pub fn generate_program(input: &str) -> Program {
+    let lexer = Lexer::new(input.into());
+    let mut parser = Parser::new(lexer);
+    let program = parser.parse_program();
+
+    assert_eq!(check_parser_errors(&parser), 0);
+
+    program
+}
+
+fn check_parser_errors(parser: &Parser) -> usize {
+    if !parser.errors.is_empty() {
+        println!(
+            "Parser has {} errors:\n {:?}",
+            parser.errors.len(),
+            parser.errors
+        );
+    }
+
+    parser.errors.len()
+}
+
+#[test]
+fn will_you_parse_let() {
+    println!("Hello");
+    let input = r#"
+        let x = 5;
+        let y = 10;
+        let flag = false;
+        let foobar = y;
+    "#;
+
+    let program = generate_program(input);
+    println!("{}", program);
+    let expected_statemets = vec![
+        Statement::Let(LetStatement {
+            name: IdentNode {
+                token: Token::Ident("x".to_string()),
+                val: "x".to_string(),
+            },
+            val: Expression::Primitive(PrimitiveNode::IntegerLiteral(5)),
+        }),
+        Statement::Let(LetStatement {
+            name: IdentNode {
+                token: Token::Ident("y".to_string()),
+                val: "y".to_string(),
+            },
+            val: Expression::Primitive(PrimitiveNode::IntegerLiteral(10)),
+        }),
+        Statement::Let(LetStatement {
+            name: IdentNode {
+                token: Token::Ident("flag".to_string()),
+                val: "flag".to_string(),
+            },
+            val: Expression::Primitive(PrimitiveNode::BooleanLiteral(false)),
+        }),
+        Statement::Let(LetStatement {
+            name: IdentNode {
+                token: Token::Ident("foobar".to_string()),
+                val: "foobar".to_string(),
+            },
+            val: Expression::Identifier(IdentNode {
+                token: Token::Ident("y".to_string()),
+                val: "y".to_string(),
+            }),
+        }),
+    ];
+
+    assert_eq!(program.statements.len(), expected_statemets.len());
+
+    for (i, expected) in expected_statemets.iter().enumerate() {
+        println!("{} | {} | {} ", i, expected, program.statements[i]);
+        assert_eq!(program.statements[i], *expected);
+    }
+}
+
+#[test]
+fn will_you_oopsie_let() {
+    println!("");
+    let input = r"
+        let x 5;
+        let = 10;
+        let foobar == y;
+    ";
+    let lexer = Lexer::new(input.into());
+    let mut parser = Parser::new(lexer);
+    parser.parse_program();
+
+    println!("{:?}", parser.errors);
+    assert_eq!(parser.errors.len(), 3);
+}

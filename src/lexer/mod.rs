@@ -81,6 +81,22 @@ impl Lexer {
                     Token::Assign
                 }
             }
+            b'|' => {
+                if self.peek() == b'|' {
+                    self.read_char();
+                    Token::Or
+                } else {
+                    Token::Illegal
+                }
+            }
+            b'&' => {
+                if self.peek() == b'&' {
+                    self.read_char();
+                    Token::And
+                } else {
+                    Token::Illegal
+                }
+            }
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                 let ident = self.read_ident();
 
@@ -137,7 +153,10 @@ impl Lexer {
     fn read_ident(&mut self) -> String {
         let pos = self.position;
 
-        while self.curr_ch.is_ascii_alphabetic() || self.curr_ch == b'_' || self.curr_ch.is_ascii_digit() {
+        while self.curr_ch.is_ascii_alphabetic()
+            || self.curr_ch == b'_'
+            || self.curr_ch.is_ascii_digit()
+        {
             self.read_char();
         }
 
@@ -158,7 +177,7 @@ impl Lexer {
     fn read_str(&mut self) -> String {
         self.read_char(); // skip the opening "
 
-        let mut l_str = String::new();
+        let mut estr = String::new();
 
         while self.curr_ch != b'"' {
             if self.curr_ch == b'\\' {
@@ -166,13 +185,13 @@ impl Lexer {
                 // and read the next character as is
                 self.read_char();
             }
-            l_str.push(self.curr_ch.into());
+            estr.push(self.curr_ch.into());
             self.read_char();
         }
 
         self.read_char(); // skip the closing "
 
-        l_str
+        estr
     }
 
     fn skip_whitespace(&mut self) {

@@ -1,9 +1,9 @@
 use core::panic;
 use std::fmt::Display;
 
-use crate::lexer::token::{LiteralType, Token};
+use lexer::token::{LiteralType, Token};
 
-use super::{
+use crate::{
     ast::{Expression, Precedence},
     statement::BlockStatement,
     Parser,
@@ -68,12 +68,13 @@ impl PrimitiveNode {
             Token::Literal { kind, val } => {
                 println!("val is: {}", val);
                 match kind {
-                LiteralType::Int => match val.parse::<i64>() {
-                    Ok(val) => Ok(PrimitiveNode::IntegerLiteral(val)),
-                    Err(err) => Err(err.to_string()),
-                },
-                LiteralType::Str => Ok(PrimitiveNode::StringLiteral(val)),
-            }},
+                    LiteralType::Int => match val.parse::<i64>() {
+                        Ok(val) => Ok(PrimitiveNode::IntegerLiteral(val)),
+                        Err(err) => Err(err.to_string()),
+                    },
+                    LiteralType::Str => Ok(PrimitiveNode::StringLiteral(val)),
+                }
+            }
             Token::True => Ok(PrimitiveNode::BooleanLiteral(true)),
             Token::False => Ok(PrimitiveNode::BooleanLiteral(false)),
             _ => Err(format!("{} is not primitive", parser.curr_token)),
@@ -147,7 +148,7 @@ pub struct ConditionalOperator {
 
 impl Display for ConditionalOperator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut expr = String::from(format!("if {}{{\n{}}}", self.cond, self.consequence,));
+        let mut expr = format!("if {}{{\n{}}}", self.cond, self.consequence,);
 
         if let Some(alt) = &self.alternative {
             expr.push_str(format!(" else {{\n{}}}", alt).as_str())

@@ -1,10 +1,9 @@
+use lexer::{token::Token, Lexer};
+
 use crate::{
-    lexer::{token::Token, Lexer},
-    parser::{
-        ast::{Expression, Precedence, Program},
-        nodes::IdentNode,
-        statement::{LetStatement, ReturnStatement, Statement},
-    },
+    ast::{Expression, Precedence, Program},
+    nodes::IdentNode,
+    statement::{LetStatement, ReturnStatement, Statement},
 };
 
 pub mod ast;
@@ -186,11 +185,4 @@ impl Parser {
             _ => &self.curr_token == token,
         }
     }
-}
-
-pub fn parse(input: String) -> Program {
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
-
-    parser.parse_program()
 }

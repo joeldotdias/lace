@@ -1,6 +1,9 @@
-use std::{io::{self, Stderr, Stdin, Stdout, Write}, process};
+use std::{
+    io::{self, Stderr, Stdin, Stdout, Write},
+    process,
+};
 
-use lace::lexer::Lexer;
+use lexer::Lexer;
 
 #[derive(Default)]
 enum PromptColour {
@@ -12,8 +15,8 @@ enum PromptColour {
 impl PromptColour {
     fn colour(&self) -> &str {
         match self {
-            PromptColour::Works =>  "\x1b[92m",
-            PromptColour::Error =>  "\x1b[91m",
+            PromptColour::Works => "\x1b[92m",
+            PromptColour::Error => "\x1b[91m",
         }
     }
 }
@@ -32,13 +35,13 @@ ___        ___
 const PROMPT: &str = ">> ";
 
 fn main() {
-    let (stdin, mut stdout, stderr): (Stdin, Stdout, Stderr) = (io::stdin(), io::stdout(), io::stderr());
+    let (stdin, mut stdout, stderr): (Stdin, Stdout, Stderr) =
+        (io::stdin(), io::stdout(), io::stderr());
     let mut prompt_colour = PromptColour::default();
 
-    write!(&stdout, "{}",LOGO).unwrap();
+    write!(&stdout, "{}", LOGO).unwrap();
 
     loop {
-        // write!(&stdout, "\x1b[93m{}\x1b[0m", PROMPT).unwrap();
         write!(&stdout, "{}{}\x1b[0m", prompt_colour.colour(), PROMPT).unwrap();
 
         stdout.flush().unwrap();
@@ -46,8 +49,8 @@ fn main() {
         let mut input = String::new();
 
         if let Err(err) = stdin.read_line(&mut input) {
-                    writeln!(&stderr, "Error: {}", err).unwrap();
-                    process::exit(1);
+            writeln!(&stderr, "Error: {}", err).unwrap();
+            process::exit(1);
         };
 
         let mut lexer = Lexer::new(input);
@@ -60,8 +63,12 @@ fn main() {
             }
 
             match writeln!(&stdout, "{}", token) {
-                Ok(_) => { prompt_colour = PromptColour::Works; },
-                Err(_) => { prompt_colour = PromptColour::Error; },
+                Ok(_) => {
+                    prompt_colour = PromptColour::Works;
+                }
+                Err(_) => {
+                    prompt_colour = PromptColour::Error;
+                }
             };
         }
     }

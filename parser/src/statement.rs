@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use crate::{lexer::token::Token, parser::{ast::Expression, nodes::IdentNode}};
+use lexer::token::Token;
 
-use super::Parser;
+use crate::{ast::Expression, nodes::IdentNode, Parser};
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Statement {
@@ -44,17 +44,16 @@ impl Display for ReturnStatement {
     }
 }
 
-
 #[derive(PartialEq, Debug, Clone)]
 pub struct BlockStatement {
-    pub statements: Vec<Statement>
+    pub statements: Vec<Statement>,
 }
 
 impl Display for BlockStatement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut block = String::new();
         self.statements.iter().for_each(|statement| {
-            block.push_str(format!("{}\n",statement).as_str());
+            block.push_str(format!("{}\n", statement).as_str());
         });
         write!(f, "{}", block)
     }

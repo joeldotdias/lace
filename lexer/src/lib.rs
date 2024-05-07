@@ -3,7 +3,7 @@ pub mod token;
 #[cfg(test)]
 mod tests;
 
-use crate::lexer::token::{LiteralType, Token};
+use token::{Token, LiteralType};
 
 /// Iterator over the code
 /// Acts as a cursor over the input

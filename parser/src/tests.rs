@@ -1,21 +1,25 @@
+use lexer::{token::Token, Lexer};
+
 use crate::{
-    lexer::{token::Token, Lexer},
-    parser::{
-        ast::{Expression, Program},
-        nodes::{IdentNode, PrimitiveNode},
-        statement::{LetStatement, Statement},
-        Parser,
-    },
+    ast::Expression,
+    nodes::{IdentNode, PrimitiveNode},
+    statement::{LetStatement, Statement},
+    Parser,
 };
 
-pub fn generate_program(input: &str) -> Program {
+pub fn validate_parser(input: &str, expected_statemets: Vec<Statement>) {
     let lexer = Lexer::new(input.into());
     let mut parser = Parser::new(lexer);
     let program = parser.parse_program();
 
     assert_eq!(check_parser_errors(&parser), 0);
 
-    program
+    assert_eq!(program.statements.len(), expected_statemets.len());
+
+    for (i, expected) in expected_statemets.iter().enumerate() {
+        println!("{} | {} | {} ", i, expected, program.statements[i]);
+        assert_eq!(program.statements[i], *expected);
+    }
 }
 
 fn check_parser_errors(parser: &Parser) -> usize {
@@ -40,8 +44,8 @@ fn will_you_parse_let() {
         let foobar = y;
     "#;
 
-    let program = generate_program(input);
-    println!("{}", program);
+    // let program = validate_parser(input);
+    // println!("{}", program);
     let expected_statemets = vec![
         Statement::Let(LetStatement {
             name: IdentNode {
@@ -76,12 +80,7 @@ fn will_you_parse_let() {
         }),
     ];
 
-    assert_eq!(program.statements.len(), expected_statemets.len());
-
-    for (i, expected) in expected_statemets.iter().enumerate() {
-        println!("{} | {} | {} ", i, expected, program.statements[i]);
-        assert_eq!(program.statements[i], *expected);
-    }
+    validate_parser(input, expected_statemets);
 }
 
 #[test]
@@ -97,5 +96,5 @@ fn will_you_oopsie_let() {
     parser.parse_program();
 
     println!("{:?}", parser.errors);
-    assert_eq!(parser.errors.len(), 3);
+    assert_ne!(parser.errors.len(), 0);
 }

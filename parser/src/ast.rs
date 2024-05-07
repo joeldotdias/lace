@@ -1,7 +1,10 @@
 use std::fmt::Display;
 
-use crate::parser::{
-    nodes::{IdentNode, PrimitiveNode, InfixOperator, PrefixOperator, ConditionalOperator, FunctionCall, FunctionLiteral},
+use crate::{
+    nodes::{
+        ConditionalOperator, FunctionCall, FunctionLiteral, IdentNode, InfixOperator,
+        PrefixOperator, PrimitiveNode,
+    },
     statement::Statement,
     Parser, Token,
 };

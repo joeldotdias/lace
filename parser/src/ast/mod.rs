@@ -1,11 +1,16 @@
+pub mod nodes;
+pub mod statement;
+
 use std::fmt::Display;
 
+use nodes::{
+    ConditionalOperator, FunctionCall, FunctionLiteral, IdentNode, InfixOperator, PrefixOperator,
+    PrimitiveNode,
+};
+use statement::Statement;
+
 use crate::{
-    nodes::{
-        ConditionalOperator, FunctionCall, FunctionLiteral, IdentNode, InfixOperator,
-        PrefixOperator, PrimitiveNode,
-    },
-    statement::Statement,
+    errors::{ExprError, NoPrefixParser, ParserError},
     Parser, Token,
 };
 
@@ -41,13 +46,21 @@ impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Expression::Identifier(x) => write!(f, "{x}"),
-            _ => write!(f, ""),
+            Expression::Primitive(x) => write!(f, "{x}"),
+            Expression::Prefix(x) => write!(f, "{x}"),
+            Expression::Infix(x) => write!(f, "{x}"),
+            Expression::Conditional(x) => write!(f, "{x}"),
+            Expression::FunctionDef(x) => write!(f, "{x}"),
+            Expression::FunctionCall(x) => write!(f, "{x}"),
         }
     }
 }
 
 impl Expression {
-    pub fn parse(parser: &mut Parser, precedence: Precedence) -> Result<Expression, String> {
+    pub fn parse(
+        parser: &mut Parser,
+        precedence: Precedence,
+    ) -> Result<Expression, Box<dyn ParserError>> {
         let mut left_expr = match parser.curr_token.clone() {
             Token::Ident(_) => (IdentNode::parse(parser)).map(Expression::Identifier),
             Token::Literal { kind: _, val: _ } | Token::False | Token::True => {
@@ -57,7 +70,7 @@ impl Expression {
             Token::LParen => Self::parse_grouped_expr(parser),
             Token::If => ConditionalOperator::parse(parser).map(Expression::Conditional),
             Token::Function => FunctionLiteral::parse(parser).map(Expression::FunctionDef),
-            _ => Err(format!("No prefix parser found for {}", parser.curr_token)),
+            _ => return Err(Box::new(NoPrefixParser::from(parser.curr_token.clone()))),
         }?;
 
         while !parser.peek_token_is(&Token::Semicolon) && precedence < parser.peek_precedence() {
@@ -91,7 +104,7 @@ impl Expression {
         Ok(left_expr)
     }
 
-    fn parse_grouped_expr(parser: &mut Parser) -> Result<Expression, String> {
+    fn parse_grouped_expr(parser: &mut Parser) -> Result<Expression, Box<dyn ParserError>> {
         parser.next_token();
 
         let expr = Expression::parse(parser, Precedence::Lowest);
@@ -99,11 +112,15 @@ impl Expression {
         if parser.expect_peek(&Token::RParen) {
             expr
         } else {
-            Err("Failed to parse expression".into())
+            Err(Box::new(ExprError::from(None)))
+            // Err("Failed to parse expression".into())
         }
     }
 
-    pub fn parse_expr_list(parser: &mut Parser, end: &Token) -> Result<Vec<Expression>, String> {
+    pub fn parse_expr_list(
+        parser: &mut Parser,
+        end: &Token,
+    ) -> Result<Vec<Expression>, Box<dyn ParserError>> {
         let mut expr_list = Vec::new();
         if parser.peek_token_is(end) {
             parser.next_token();
@@ -120,7 +137,7 @@ impl Expression {
         }
 
         if !parser.expect_peek(end) {
-            Err("Expession did not close properly".into())
+            Err(Box::new(ExprError::from(None)))
         } else {
             Ok(expr_list)
         }

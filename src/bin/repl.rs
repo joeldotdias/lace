@@ -3,7 +3,7 @@ use std::{
     process,
 };
 
-use lexer::Lexer;
+use lace_lexer::Lexer;
 
 #[derive(Default)]
 enum PromptColour {

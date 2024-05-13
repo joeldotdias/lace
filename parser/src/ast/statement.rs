@@ -1,8 +1,11 @@
 use std::fmt::Display;
 
-use lexer::token::Token;
+use lace_lexer::token::Token;
 
-use crate::{ast::Expression, nodes::IdentNode, Parser};
+use crate::{
+    ast::{nodes::IdentNode, Expression},
+    Parser,
+};
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Statement {

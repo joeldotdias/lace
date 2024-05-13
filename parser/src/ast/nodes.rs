@@ -1,11 +1,14 @@
 use core::panic;
 use std::fmt::Display;
 
-use lexer::token::{LiteralType, Token};
+use lace_lexer::token::{LiteralType, Token};
 
 use crate::{
-    ast::{Expression, Precedence},
-    statement::BlockStatement,
+    ast::{Expression, Precedence, statement::BlockStatement},
+    errors::{
+        CondIssue, ExpectedIdent, ExpectedInteger, FuncError, FuncIssue, IncompleteConditional,
+        NoPrefixParser, ParserError,
+    },
     Parser,
 };
 
@@ -30,17 +33,14 @@ impl IdentNode {
         }
     }
 
-    pub fn parse(parser: &mut Parser) -> Result<Self, String> {
+    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
         if let Token::Ident(val) = &parser.curr_token {
             Ok(Self {
                 token: parser.curr_token.clone(),
                 val: val.into(),
             })
         } else {
-            Err(format!(
-                "Expected an identifier, received {}",
-                parser.curr_token
-            ))
+            Err(Box::new(ExpectedIdent::from(parser.curr_token.clone())))
         }
     }
 }
@@ -63,21 +63,22 @@ impl Display for PrimitiveNode {
 }
 
 impl PrimitiveNode {
-    pub fn parse(parser: &mut Parser) -> Result<Self, String> {
-        match parser.curr_token.clone() {
+    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+        match &parser.curr_token.clone() {
             Token::Literal { kind, val } => {
                 println!("val is: {}", val);
                 match kind {
                     LiteralType::Int => match val.parse::<i64>() {
                         Ok(val) => Ok(PrimitiveNode::IntegerLiteral(val)),
-                        Err(err) => Err(err.to_string()),
+                        Err(_) => Err(Box::new(ExpectedInteger::from(val.to_string()))),
+                        // Err(err) => Err(err.to_string()),
                     },
-                    LiteralType::Str => Ok(PrimitiveNode::StringLiteral(val)),
+                    LiteralType::Str => Ok(PrimitiveNode::StringLiteral(val.into())),
                 }
             }
             Token::True => Ok(PrimitiveNode::BooleanLiteral(true)),
             Token::False => Ok(PrimitiveNode::BooleanLiteral(false)),
-            _ => Err(format!("{} is not primitive", parser.curr_token)),
+            _ => Err(Box::new(NoPrefixParser::from(parser.curr_token.clone()))),
         }
     }
 }
@@ -88,6 +89,12 @@ pub struct PrefixOperator {
     pub right_expr: Box<Expression>,
 }
 
+impl Display for PrefixOperator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}{})", self.token, self.right_expr)
+    }
+}
+
 impl PrefixOperator {
     pub fn new(token: Token, right: Expression) -> Self {
         Self {
@@ -96,7 +103,7 @@ impl PrefixOperator {
         }
     }
 
-    pub fn parse(parser: &mut Parser) -> Result<Self, String> {
+    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
         let token = parser.curr_token.clone();
         parser.next_token();
         let right = Expression::parse(parser, Precedence::Prefix)?;
@@ -127,7 +134,7 @@ impl InfixOperator {
         }
     }
 
-    pub fn parse(parser: &mut Parser, left_expr: Expression) -> Result<Self, String> {
+    pub fn parse(parser: &mut Parser, left_expr: Expression) -> Result<Self, Box<dyn ParserError>> {
         let token = parser.curr_token.clone();
         let precedence = parser.curr_precedence();
 
@@ -159,20 +166,30 @@ impl Display for ConditionalOperator {
 }
 
 impl ConditionalOperator {
-    pub fn parse(parser: &mut Parser) -> Result<Self, String> {
+    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
         if !parser.expect_peek(&Token::LParen) {
-            return Err("Conditonal expression didn't open properly".into());
+            return Err(Box::new(IncompleteConditional::new(
+                None,
+                CondIssue::ExprIncorrectlyOpened,
+            )));
+            // return Err("Conditonal expression didn't open properly".into());
         }
 
         parser.next_token();
         let cond = Expression::parse(parser, Precedence::Lowest)?;
 
         if !parser.expect_peek(&Token::RParen) {
-            return Err("Conditonal expression didn't close properly".into());
+            return Err(Box::new(IncompleteConditional::new(
+                None,
+                CondIssue::ExprIncorrectlyClosed,
+            )));
         }
 
         if !parser.expect_peek(&Token::LCurly) {
-            return Err("Conditonal expression body didn't open properly".into());
+            return Err(Box::new(IncompleteConditional::new(
+                None,
+                CondIssue::BodyIncorrectlyOpened,
+            )));
         }
 
         let consequence = BlockStatement::parse(parser);
@@ -181,7 +198,10 @@ impl ConditionalOperator {
         if parser.peek_token_is(&Token::Else) {
             parser.next_token();
             if !parser.expect_peek(&Token::LCurly) {
-                return Err("Conditonal else expression didn't open properly".into());
+                return Err(Box::new(IncompleteConditional::new(
+                    None,
+                    CondIssue::ExpectedElse,
+                )));
             }
 
             alternative = Some(BlockStatement::parse(parser));
@@ -214,20 +234,18 @@ impl Display for FunctionLiteral {
 }
 
 impl FunctionLiteral {
-    pub fn parse(parser: &mut Parser) -> Result<Self, String> {
+    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
         if !parser.expect_peek(&Token::LParen) {
-            return Err("No params".into());
+            return Err(Box::new(FuncError::new(None, FuncIssue::FuncMissingParens)));
         }
 
-        let params = match Self::parse_function_params(parser) {
-            Ok(params) => params,
-            Err(err) => {
-                return Err(err);
-            }
-        };
+        let params = Self::parse_function_params(parser)?;
 
         if !parser.expect_peek(&Token::LCurly) {
-            return Err("function body not opened".into());
+            return Err(Box::new(FuncError::new(
+                None,
+                FuncIssue::BodyIncorrectlyOpened,
+            )));
         }
 
         let body = BlockStatement::parse(parser);
@@ -239,7 +257,7 @@ impl FunctionLiteral {
         })
     }
 
-    fn parse_function_params(parser: &mut Parser) -> Result<Vec<IdentNode>, String> {
+    fn parse_function_params(parser: &mut Parser) -> Result<Vec<IdentNode>, Box<dyn ParserError>> {
         let mut idents = Vec::<IdentNode>::new();
 
         if parser.peek_token_is(&Token::RParen) {
@@ -261,7 +279,10 @@ impl FunctionLiteral {
         }
 
         if !parser.expect_peek(&Token::RParen) {
-            return Err("function wasn't closed properly".into());
+            return Err(Box::new(FuncError::new(
+                None,
+                FuncIssue::BodyIncorrectlyClosed,
+            )));
         }
 
         Ok(idents)
@@ -283,7 +304,7 @@ impl Display for FunctionCall {
 }
 
 impl FunctionCall {
-    pub fn parse(parser: &mut Parser, function: Expression) -> Result<Self, String> {
+    pub fn parse(parser: &mut Parser, function: Expression) -> Result<Self, Box<dyn ParserError>> {
         let args = Expression::parse_expr_list(parser, &Token::RParen)?;
 
         Ok(FunctionCall {

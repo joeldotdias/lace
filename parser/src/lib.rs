@@ -1,14 +1,14 @@
-use lexer::{token::Token, Lexer};
+use errors::{BadExpectations, ParserError};
+use lace_lexer::{token::Token, Lexer};
 
-use crate::{
-    ast::{Expression, Precedence, Program},
+use crate::ast::{
     nodes::IdentNode,
     statement::{LetStatement, ReturnStatement, Statement},
+    Expression, Precedence, Program,
 };
 
 pub mod ast;
-pub mod nodes;
-pub mod statement;
+pub mod errors;
 
 #[cfg(test)]
 mod tests;
@@ -17,7 +17,8 @@ pub struct Parser {
     pub lexer: Lexer,
     pub curr_token: Token,
     pub peeked_token: Token,
-    pub errors: Vec<String>,
+    // pub errors: Vec<String>,
+    pub errors: Vec<Box<dyn ParserError>>,
 }
 
 impl Parser {
@@ -38,10 +39,6 @@ impl Parser {
     pub fn next_token(&mut self) {
         self.curr_token = self.peeked_token.clone();
         self.peeked_token = self.lexer.next_token();
-    }
-
-    pub fn errors(&self) -> &Vec<String> {
-        &self.errors
     }
 
     pub fn parse_program(&mut self) -> Program {
@@ -172,8 +169,16 @@ impl Parser {
     }
 
     fn peek_error(&mut self, token: &Token) {
-        self.errors
-            .push(format!("Expected {}, got {}", token, self.peeked_token))
+        self.found_err(Box::new(BadExpectations::new(
+            token.clone(),
+            self.peeked_token.clone(),
+        )))
+    }
+
+    pub fn log_errors(&self) {
+        self.errors.iter().for_each(|err| {
+            println!("{}", err.err_msg());
+        })
     }
 
     fn curr_token_is(&self, token: &Token) -> bool {
@@ -184,5 +189,9 @@ impl Parser {
             }
             _ => &self.curr_token == token,
         }
+    }
+
+    fn found_err(&mut self, err: Box<dyn ParserError>) {
+        self.errors.push(err);
     }
 }

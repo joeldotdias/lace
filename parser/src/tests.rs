@@ -1,4 +1,4 @@
-use lexer::{token::Token, Lexer};
+use lace_lexer::{token::Token, Lexer};
 
 use crate::{
     ast::Expression,
@@ -24,11 +24,8 @@ pub fn validate_parser(input: &str, expected_statemets: Vec<Statement>) {
 
 fn check_parser_errors(parser: &Parser) -> usize {
     if !parser.errors.is_empty() {
-        println!(
-            "Parser has {} errors:\n {:?}",
-            parser.errors.len(),
-            parser.errors
-        );
+        println!("Parser has {} errors:",parser.errors.len());
+        parser.log_errors();
     }
 
     parser.errors.len()
@@ -44,8 +41,6 @@ fn will_you_parse_let() {
         let foobar = y;
     "#;
 
-    // let program = validate_parser(input);
-    // println!("{}", program);
     let expected_statemets = vec![
         Statement::Let(LetStatement {
             name: IdentNode {
@@ -95,6 +90,6 @@ fn will_you_oopsie_let() {
     let mut parser = Parser::new(lexer);
     parser.parse_program();
 
-    println!("{:?}", parser.errors);
+    parser.log_errors();
     assert_ne!(parser.errors.len(), 0);
 }

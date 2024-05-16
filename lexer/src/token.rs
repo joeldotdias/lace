@@ -1,39 +1,71 @@
 use std::fmt::Display;
 
-/// Reprsents the parsed token type.
+/// Represents the parsed token type.
 /// In case of a string or integer literal,
 /// we store the datatype and value
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
+    /// Identifiers
     Ident(String),
+
+    /// Values allocated to a variable
     Literal { kind: LiteralType, val: String },
 
     // Operators
-    Assign, // =
-    Bang, // !
-    Plus, // +
-    Minus, // -
-    ForwardSlash, // /
-    Modulo, // %
-    Asterisk, // *
-    Equal, // ==
-    NotEqual, // !=
-    LessThan, // <
-    GreaterThan, // >
-    LessThanEqual, // <=
-    GreaterThanEqual, // >=
-    And, // &&
-    Or, // ||
+    /// =
+    Assign,
+
+    // Arithmetic
+    /// +
+    Plus,
+    /// -
+    Minus,
+    /// /
+    ForwardSlash,
+    /// %
+    Modulo,
+    /// *
+    Asterisk,
+
+    // Logical
+    /// !
+    Bang,
+    /// &&
+    And,
+    /// ||
+    Or,
+
+    // Relational
+    /// ==
+    Equal,
+    /// !=
+    NotEqual,
+    /// <
+    LessThan,
+    /// >
+    GreaterThan,
+    /// <=
+    LessThanEqual,
+    /// >=
+    GreaterThanEqual,
 
     // Delimiters
-    Comma, // ,
-    Semicolon, // ;
-    LParen, // (
-    RParen, // )
-    LCurly, // {
-    RCurly, // }
-    LBracket, // [
-    RBracket, // ]
+    /// ,
+    Comma,
+    /// ;
+    Semicolon,
+    /// (
+    LParen,
+    /// )
+    RParen,
+    /// {
+    LCurly,
+    /// }
+    RCurly,
+    /// [
+    LBracket,
+    /// ]
+    RBracket,
 
     // Keywords
     Let,
@@ -44,8 +76,16 @@ pub enum Token {
     True,
     False,
 
-    Eof,
+    // Comments
+    /// //
+    LineComment(String),
+
+    /// Unknown or unrecognizable tokens.
+    /// Includes emojis and other non ASCII characters.
     Illegal,
+
+    /// End of input
+    Eof,
 }
 
 impl Display for Token {
@@ -83,6 +123,7 @@ impl Display for Token {
             Token::Else => write!(f, "Else"),
             Token::True => write!(f, "True"),
             Token::False => write!(f, "False"),
+            Token::LineComment(c) => write!(f, "LineComment {}", c),
             Token::Eof => write!(f, "Eof"),
             Token::Illegal => write!(f, "Illegal"),
         }

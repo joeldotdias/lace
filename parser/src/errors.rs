@@ -6,7 +6,7 @@ use crate::ast::Expression;
 
 // TODO: Make this more detailed. I have no idea how at this moment
 pub trait ParserError {
-    fn err_msg(&self) -> String;
+    fn log_err(&self) -> String;
 }
 
 pub struct NoPrefixParser {
@@ -20,7 +20,7 @@ impl From<Token> for NoPrefixParser {
 }
 
 impl ParserError for NoPrefixParser {
-    fn err_msg(&self) -> String {
+    fn log_err(&self) -> String {
         format!("No prefix parser found for {}", self.token)
     }
 }
@@ -35,10 +35,18 @@ pub enum CondIssue {
 impl Display for CondIssue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CondIssue::ExprIncorrectlyOpened => write!(f, "Conditional expression didn't open properly"),
-            CondIssue::ExprIncorrectlyClosed => write!(f, "Condtional expression didn't close properly"),
-            CondIssue::BodyIncorrectlyOpened => write!(f, "Body of conditonal expression didn't open properly"),
-            CondIssue::ExpectedElse => write!(f, "Expected an Else block for this conditional expression"),
+            CondIssue::ExprIncorrectlyOpened => {
+                write!(f, "Conditional expression didn't open properly")
+            }
+            CondIssue::ExprIncorrectlyClosed => {
+                write!(f, "Condtional expression didn't close properly")
+            }
+            CondIssue::BodyIncorrectlyOpened => {
+                write!(f, "Body of conditonal expression didn't open properly")
+            }
+            CondIssue::ExpectedElse => {
+                write!(f, "Expected an Else block for this conditional expression")
+            }
         }
     }
 }
@@ -55,7 +63,7 @@ impl IncompleteConditional {
 }
 
 impl ParserError for IncompleteConditional {
-    fn err_msg(&self) -> String {
+    fn log_err(&self) -> String {
         match &self.expr {
             Some(expr) => format!("{}: {}", expr, self.issue),
             None => format!("{}", self.issue),
@@ -72,7 +80,9 @@ pub enum FuncIssue {
 impl Display for FuncIssue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FuncIssue::FuncMissingParens => write!(f, "Expected parentheses after function definition"),
+            FuncIssue::FuncMissingParens => {
+                write!(f, "Expected parentheses after function definition")
+            }
             FuncIssue::BodyIncorrectlyOpened => write!(f, "Function body wasn't opened properly"),
             FuncIssue::BodyIncorrectlyClosed => write!(f, "Function body wasn't closed properly"),
         }
@@ -90,7 +100,7 @@ impl FuncError {
 }
 
 impl ParserError for FuncError {
-    fn err_msg(&self) -> String {
+    fn log_err(&self) -> String {
         match &self.func_name {
             Some(name) => format!("{}: {}", name, self.issue),
             None => format!("{}", self.issue),
@@ -109,7 +119,7 @@ impl From<Option<Expression>> for ExprError {
 }
 
 impl ParserError for ExprError {
-    fn err_msg(&self) -> String {
+    fn log_err(&self) -> String {
         match &self.expr {
             Some(expr) => format!("{} Failed to parse expression", expr),
             None => "Expression did not close properly".into(),
@@ -128,7 +138,7 @@ impl From<Token> for ExpectedIdent {
 }
 
 impl ParserError for ExpectedIdent {
-    fn err_msg(&self) -> String {
+    fn log_err(&self) -> String {
         format!("Expected an identifier, received {}", self.found)
     }
 }
@@ -144,7 +154,7 @@ impl From<String> for ExpectedInteger {
 }
 
 impl ParserError for ExpectedInteger {
-    fn err_msg(&self) -> String {
+    fn log_err(&self) -> String {
         format!("Expected an integer, received {}", self.found)
     }
 }
@@ -161,7 +171,7 @@ impl BadExpectations {
 }
 
 impl ParserError for BadExpectations {
-    fn err_msg(&self) -> String {
+    fn log_err(&self) -> String {
         format!("Expected {}, found {}", self.expected, self.got)
     }
 }

@@ -17,7 +17,6 @@ pub struct Parser {
     pub lexer: Lexer,
     pub curr_token: Token,
     pub peeked_token: Token,
-    // pub errors: Vec<String>,
     pub errors: Vec<Box<dyn ParserError>>,
 }
 
@@ -84,11 +83,10 @@ impl Parser {
 
         let mut val = match Expression::parse(self, Precedence::Lowest) {
             Ok(val) => {
-                println!("Hello val :{}", val);
                 val
             }
             Err(err) => {
-                self.errors.push(err);
+                self.found_err(err);
                 return None;
             }
         };
@@ -110,7 +108,7 @@ impl Parser {
         let return_val = match Expression::parse(self, Precedence::Lowest) {
             Ok(val) => val,
             Err(err) => {
-                self.errors.push(err);
+                self.found_err(err);
                 return None;
             }
         };
@@ -134,7 +132,7 @@ impl Parser {
         match expr {
             Ok(expr) => Some(expr),
             Err(err) => {
-                self.errors.push(err);
+                self.found_err(err);
                 None
             }
         }
@@ -177,7 +175,7 @@ impl Parser {
 
     pub fn log_errors(&self) {
         self.errors.iter().for_each(|err| {
-            println!("{}", err.err_msg());
+            println!("{}", err.log_err());
         })
     }
 

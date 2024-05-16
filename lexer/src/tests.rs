@@ -255,7 +255,7 @@ fn will_you_lex_more_code() {
 
 #[test]
 fn will_you_lex_from_a_file() {
-    let contents = fs::read_to_string("examples/basic.lace").unwrap();
+    let contents = fs::read_to_string("../examples/basic.lace").unwrap();
     let input = contents.as_str();
 
     let tokens = vec![
@@ -339,6 +339,34 @@ fn will_you_escape() {
         },
         Token::Semicolon,
         Token::Eof,
+    ];
+
+    validate_tokens(input, tokens)
+}
+
+#[test]
+fn will_you_lex_a_comment() {
+    let input = r#"
+        // Hello
+        //What is up
+        let count = 0; // This is a counter
+        count = count + 1;
+    "#;
+
+    let tokens = vec![
+        Token::LineComment(" Hello".into()),
+        Token::LineComment("What is up".into()),
+        Token::Let,
+        Token::Ident("count".into()),
+        Token::Assign,
+        Token::Literal { kind: LiteralType::Int, val: "0".into() },
+        Token::Semicolon,
+        Token::LineComment(" This is a counter".into()),
+        Token::Ident("count".into()),
+        Token::Assign,
+        Token::Ident("count".into()),
+        Token::Plus,
+        Token::Literal { kind: LiteralType::Int, val: "1".into() },
     ];
 
     validate_tokens(input, tokens)

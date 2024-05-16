@@ -3,7 +3,9 @@ pub mod token;
 #[cfg(test)]
 mod tests;
 
-use token::{Token, LiteralType};
+use std::u8;
+
+use token::{LiteralType, Token};
 
 /// Iterator over the code
 /// Acts as a cursor over the input
@@ -55,7 +57,13 @@ impl Lexer {
                 }
             }
             b'*' => Token::Asterisk,
-            b'/' => Token::ForwardSlash,
+            b'/' => {
+                if self.peek() == b'/' {
+                    Token::LineComment(self.read_line_comment())
+                } else {
+                    Token::ForwardSlash
+                }
+            }
             b'%' => Token::Modulo,
             b'<' => {
                 if self.peek() == b'=' {
@@ -192,6 +200,24 @@ impl Lexer {
         self.read_char(); // skip the closing "
 
         estr
+    }
+
+    fn read_line_comment(&mut self) -> String {
+        // skip the '//' which denotes start of a comment
+        self.read_char();
+        self.read_char();
+
+        let pos = self.position;
+
+        while self.curr_ch != b'\n' && self.read_position < self.input.len() {
+            self.read_char();
+        }
+
+        let cm_str = String::from_utf8_lossy(&self.input[pos..self.position]).to_string();
+
+        self.read_char();
+
+        cm_str
     }
 
     fn skip_whitespace(&mut self) {

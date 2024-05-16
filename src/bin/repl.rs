@@ -4,6 +4,7 @@ use std::{
 };
 
 use lace_lexer::Lexer;
+use lace_parser::Parser;
 
 #[derive(Default)]
 enum PromptColour {
@@ -53,23 +54,39 @@ fn main() {
             process::exit(1);
         };
 
-        let mut lexer = Lexer::new(input);
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
 
-        loop {
-            let token = lexer.next_token();
+        let program = parser.parse_program();
 
-            if token.reached_eof() {
-                break;
-            }
-
-            match writeln!(&stdout, "{}", token) {
+        // program.statements.iter().for_each(|p| {
+            match writeln!(&stdout, "{}", program) {
                 Ok(_) => {
                     prompt_colour = PromptColour::Works;
                 }
                 Err(_) => {
                     prompt_colour = PromptColour::Error;
                 }
-            };
-        }
+            }
+        // })
+
+
+
+        // loop {
+        //     // let token = lexer.next_token();
+        //
+        //     if token.reached_eof() {
+        //         break;
+        //     }
+        //
+        //     match writeln!(&stdout, "{}", token) {
+        //         Ok(_) => {
+        //             prompt_colour = PromptColour::Works;
+        //         }
+        //         Err(_) => {
+        //             prompt_colour = PromptColour::Error;
+        //         }
+        //     };
+        // }
     }
 }

@@ -27,7 +27,7 @@ impl Display for Program {
             pstr.push_str(format!("{}\n", statement).as_str());
         }
 
-        write!(f, "Program:\n{}", pstr)
+        write!(f, "{}", pstr)
     }
 }
 
@@ -113,7 +113,6 @@ impl Expression {
             expr
         } else {
             Err(Box::new(ExprError::from(None)))
-            // Err("Failed to parse expression".into())
         }
     }
 

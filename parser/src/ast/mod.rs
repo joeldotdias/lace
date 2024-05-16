@@ -62,7 +62,7 @@ impl Expression {
         precedence: Precedence,
     ) -> Result<Expression, Box<dyn ParserError>> {
         let mut left_expr = match parser.curr_token.clone() {
-            Token::Ident(_) => (IdentNode::parse(parser)).map(Expression::Identifier),
+            Token::Ident { label: _ } => (IdentNode::parse(parser)).map(Expression::Identifier),
             Token::Literal { kind: _, val: _ } | Token::False | Token::True => {
                 PrimitiveNode::parse(parser).map(Expression::Primitive)
             }

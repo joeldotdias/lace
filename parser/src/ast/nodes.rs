@@ -15,29 +15,29 @@ use crate::{
 #[derive(PartialEq, Debug, Clone)]
 pub struct IdentNode {
     pub token: Token,
-    pub val: String,
+    pub label: String,
 }
 
 impl Display for IdentNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Ident '{}'", &self.val)
+        write!(f, "Ident '{}'", &self.label)
     }
 }
 
 impl IdentNode {
     pub fn new(token: Token) -> Self {
-        if let Token::Ident(val) = token.clone() {
-            Self { token, val }
+        if let Token::Ident { label } = token.clone() {
+            Self { token, label }
         } else {
             panic!("This function shouldn't have been called");
         }
     }
 
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
-        if let Token::Ident(val) = &parser.curr_token {
+        if let Token::Ident { label } = &parser.curr_token {
             Ok(Self {
                 token: parser.curr_token.clone(),
-                val: val.into(),
+                label: label.into(),
             })
         } else {
             Err(Box::new(ExpectedIdent::from(parser.curr_token.clone())))
@@ -261,8 +261,8 @@ impl FunctionLiteral {
     fn parse_function_name(parser: &mut Parser) -> Option<String> {
         let mut name = None;
 
-        if let Token::Ident(fn_name) = &parser.peeked_token {
-            name = Some(fn_name.to_string());
+        if let Token::Ident { label } = &parser.peeked_token {
+            name = Some(label.to_string());
             parser.next_token();
         };
 

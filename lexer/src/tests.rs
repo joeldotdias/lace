@@ -47,7 +47,7 @@ fn will_you_lex_some_code() {
 
     let tokens = vec![
         Token::Let,
-        Token::Ident(String::from("five")),
+        Token::Ident { label: "five".into() },
         Token::Assign,
         Token::Literal {
             kind: LiteralType::Int,
@@ -55,7 +55,7 @@ fn will_you_lex_some_code() {
         },
         Token::Semicolon,
         Token::Let,
-        Token::Ident(String::from("ten")),
+        Token::Ident { label: "ten".into() },
         Token::Assign,
         Token::Literal {
             kind: LiteralType::Int,
@@ -63,32 +63,32 @@ fn will_you_lex_some_code() {
         },
         Token::Semicolon,
         Token::Let,
-        Token::Ident(String::from("add")),
+        Token::Ident { label: "add".into() },
         Token::Assign,
         Token::Function,
         Token::LParen,
-        Token::Ident(String::from("x")),
+        Token::Ident { label: "x".into() },
         Token::Comma,
-        Token::Ident(String::from("y")),
+        Token::Ident { label: "y".into() },
         Token::RParen,
         Token::LCurly,
-        Token::Ident(String::from("x")),
+        Token::Ident { label: "x".into() },
         Token::Plus,
-        Token::Ident(String::from("y")),
+        Token::Ident { label: "y".into() },
         Token::RCurly,
         Token::Semicolon,
         Token::Let,
-        Token::Ident(String::from("result")),
+        Token::Ident { label: "result".into() },
         Token::Assign,
-        Token::Ident(String::from("add")),
+        Token::Ident { label: "add".into() },
         Token::LParen,
-        Token::Ident(String::from("five")),
+        Token::Ident { label: "five".into() },
         Token::Comma,
-        Token::Ident(String::from("ten")),
+        Token::Ident { label: "ten".into() },
         Token::RParen,
         Token::Semicolon,
         Token::Let,
-        Token::Ident(String::from("greet")),
+        Token::Ident { label: "greet".into() },
         Token::Assign,
         Token::Literal {
             kind: LiteralType::Str,
@@ -96,7 +96,7 @@ fn will_you_lex_some_code() {
         },
         Token::Semicolon,
         Token::Let,
-        Token::Ident(String::from("flag")),
+        Token::Ident { label: "flag".into() },
         Token::Assign,
         Token::True,
         Token::Semicolon,
@@ -114,7 +114,7 @@ fn will_you_lex_more_code() {
                 x + y;
             };
             let result = add(five, ten);
-        !-/*5;
+        !-/5*;
         5 < 10 > 5;
         if (5 < 10) {
             return true;
@@ -129,7 +129,7 @@ fn will_you_lex_more_code() {
 
     let tokens = vec![
         Token::Let,
-        Token::Ident(String::from("five")),
+        Token::Ident { label: "five".into() },
         Token::Assign,
         Token::Literal {
             kind: LiteralType::Int,
@@ -137,7 +137,7 @@ fn will_you_lex_more_code() {
         },
         Token::Semicolon,
         Token::Let,
-        Token::Ident(String::from("ten")),
+        Token::Ident { label: "ten".into() },
         Token::Assign,
         Token::Literal {
             kind: LiteralType::Int,
@@ -145,39 +145,39 @@ fn will_you_lex_more_code() {
         },
         Token::Semicolon,
         Token::Let,
-        Token::Ident(String::from("add")),
+        Token::Ident { label: "add".into() },
         Token::Assign,
         Token::Function,
         Token::LParen,
-        Token::Ident(String::from("x")),
+        Token::Ident { label: "x".into() },
         Token::Comma,
-        Token::Ident(String::from("y")),
+        Token::Ident { label: "y".into() },
         Token::RParen,
         Token::LCurly,
-        Token::Ident(String::from("x")),
+        Token::Ident { label: "x".into() },
         Token::Plus,
-        Token::Ident(String::from("y")),
+        Token::Ident { label: "y".into() },
         Token::Semicolon,
         Token::RCurly,
         Token::Semicolon,
         Token::Let,
-        Token::Ident(String::from("result")),
+        Token::Ident { label: "result".into() },
         Token::Assign,
-        Token::Ident(String::from("add")),
+        Token::Ident { label: "add".into() },
         Token::LParen,
-        Token::Ident(String::from("five")),
+        Token::Ident { label: "five".into() },
         Token::Comma,
-        Token::Ident(String::from("ten")),
+        Token::Ident { label: "ten".into() },
         Token::RParen,
         Token::Semicolon,
         Token::Bang,
         Token::Minus,
         Token::ForwardSlash,
-        Token::Asterisk,
         Token::Literal {
             kind: LiteralType::Int,
             val: String::from("5"),
         },
+        Token::Asterisk,
         Token::Semicolon,
         Token::Literal {
             kind: LiteralType::Int,
@@ -260,12 +260,12 @@ fn will_you_lex_from_a_file() {
 
     let tokens = vec![
         Token::Function,
-        Token::Ident("main".into()),
+        Token::Ident { label: "main".into() },
         Token::LParen,
         Token::RParen,
         Token::LCurly,
         Token::Let,
-        Token::Ident("num1".into()),
+        Token::Ident { label: "num1".into() },
         Token::Assign,
         Token::Literal {
             kind: LiteralType::Int,
@@ -273,7 +273,7 @@ fn will_you_lex_from_a_file() {
         },
         Token::Semicolon,
         Token::Let,
-        Token::Ident("num2".into()),
+        Token::Ident { label: "num2".into() },
         Token::Assign,
         Token::Literal {
             kind: LiteralType::Int,
@@ -281,25 +281,25 @@ fn will_you_lex_from_a_file() {
         },
         Token::Semicolon,
         Token::Let,
-        Token::Ident("bigger_of_the_2".into()),
+        Token::Ident { label: "bigger_of_the_2".into() },
         Token::Assign,
         Token::Function,
         Token::LParen,
-        Token::Ident("x".into()),
+        Token::Ident { label: "x".into() },
         Token::Comma,
-        Token::Ident("y".into()),
+        Token::Ident { label: "y".into() },
         Token::RParen,
         Token::LCurly,
         Token::If,
-        Token::Ident("x".into()),
+        Token::Ident { label: "x".into() },
         Token::GreaterThan,
-        Token::Ident("y".into()),
+        Token::Ident { label: "y".into() },
         Token::LCurly,
-        Token::Ident("x".into()),
+        Token::Ident { label: "x".into() },
         Token::RCurly,
         Token::Else,
         Token::LCurly,
-        Token::Ident("y".into()),
+        Token::Ident { label: "y".into() },
         Token::RCurly,
         Token::RCurly,
         Token::Semicolon,
@@ -323,7 +323,7 @@ fn will_you_escape() {
 
     let tokens = vec![
         Token::Let,
-        Token::Ident("msg".into()),
+        Token::Ident { label: "msg".into() },
         Token::Assign,
         Token::Literal {
             kind: LiteralType::Str,
@@ -331,7 +331,7 @@ fn will_you_escape() {
         },
         Token::Semicolon,
         Token::Let,
-        Token::Ident("other".into()),
+        Token::Ident { label: "other".into() },
         Token::Assign,
         Token::Literal {
             kind: LiteralType::Str,
@@ -351,22 +351,40 @@ fn will_you_lex_a_comment() {
         //What is up
         let count = 0; // This is a counter
         count = count + 1;
+        /* This is a
+block comment */
     "#;
 
     let tokens = vec![
-        Token::LineComment(" Hello".into()),
-        Token::LineComment("What is up".into()),
+        Token::LineComment { content: " Hello".into() },
+        Token::LineComment { content: "What is up".into() },
         Token::Let,
-        Token::Ident("count".into()),
+        Token::Ident { label: "count".into() },
         Token::Assign,
         Token::Literal { kind: LiteralType::Int, val: "0".into() },
         Token::Semicolon,
-        Token::LineComment(" This is a counter".into()),
-        Token::Ident("count".into()),
+        Token::LineComment { content: " This is a counter".into() },
+        Token::Ident { label: "count".into() },
         Token::Assign,
-        Token::Ident("count".into()),
+        Token::Ident { label: "count".into() },
         Token::Plus,
         Token::Literal { kind: LiteralType::Int, val: "1".into() },
+        Token::Semicolon,
+        Token::BlockComment { content: " This is a\nblock comment ".into(), terminated: true }
+    ];
+
+    validate_tokens(input, tokens)
+}
+
+#[test]
+fn will_you_detect_unterminated_comment() {
+    let input = r#"
+        /*This is an
+unterminated
+block comment"#;
+
+    let tokens = vec![
+        Token::BlockComment { content: "This is an\nunterminated\nblock comment".into(), terminated: false}
     ];
 
     validate_tokens(input, tokens)

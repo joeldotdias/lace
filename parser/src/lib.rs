@@ -63,14 +63,14 @@ impl Parser {
     }
 
     pub fn parse_let(&mut self) -> Option<LetStatement> {
-        if !self.expect_peek(&Token::Ident(String::new())) {
+        if !self.expect_peek(&Token::Ident { label: String::new() }) {
             return None;
         }
 
         let name = match self.curr_token.clone() {
-            Token::Ident(val) => IdentNode {
+            Token::Ident { label } => IdentNode {
                 token: self.curr_token.clone(),
-                val,
+                label,
             },
             _ => unreachable!("no happen please"),
         };
@@ -158,7 +158,7 @@ impl Parser {
 
     fn peek_token_is(&mut self, token: &Token) -> bool {
         match self.peeked_token {
-            Token::Ident(_) => matches!(token, Token::Ident(_)),
+            Token::Ident { label: _ } => matches!(token, Token::Ident { label: _ }),
             Token::Literal { kind: _, val: _ } => {
                 matches!(token, Token::Literal { kind: _, val: _ })
             }
@@ -181,7 +181,7 @@ impl Parser {
 
     fn curr_token_is(&self, token: &Token) -> bool {
         match self.curr_token {
-            Token::Ident(_) => matches!(token, Token::Ident(_)),
+            Token::Ident { label: _ } => matches!(token, Token::Ident { label: _ }),
             Token::Literal { kind: _, val: _ } => {
                 matches!(token, Token::Literal { kind: _, val: _ })
             }

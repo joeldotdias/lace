@@ -6,7 +6,7 @@ use std::fmt::Display;
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     /// Identifiers
-    Ident(String),
+    Ident { label: String },
 
     /// Values allocated to a variable
     Literal { kind: LiteralType, val: String },
@@ -78,7 +78,8 @@ pub enum Token {
 
     // Comments
     /// //
-    LineComment(String),
+    LineComment { content: String },
+    BlockComment { content: String, terminated: bool },
 
     /// Unknown or unrecognizable tokens.
     /// Includes emojis and other non ASCII characters.
@@ -91,7 +92,7 @@ pub enum Token {
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Token::Ident(x) => write!(f, "Ident({})", x),
+            Token::Ident { label } => write!(f, "Ident({})", label),
             Token::Literal { kind, val } => write!(f, "{} Literal({})", kind, val),
             Token::Assign => write!(f, "Assign"),
             Token::Bang => write!(f, "Bang"),
@@ -123,7 +124,8 @@ impl Display for Token {
             Token::Else => write!(f, "Else"),
             Token::True => write!(f, "True"),
             Token::False => write!(f, "False"),
-            Token::LineComment(c) => write!(f, "LineComment {}", c),
+            Token::LineComment { content } => write!(f, "LineComment {}", content),
+            Token::BlockComment { content, terminated: _ } => write!(f, "BlockComment {}", content),
             Token::Eof => write!(f, "Eof"),
             Token::Illegal => write!(f, "Illegal"),
         }
@@ -136,7 +138,8 @@ impl Token {
     }
 }
 
-/// Valid datatypes
+/// Valid datatypes.
+/// Booleans are just true and false tokens. Might be added in here later
 #[derive(Debug, PartialEq, Clone)]
 pub enum LiteralType {
     /// 64 bit signed integer

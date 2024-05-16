@@ -46,33 +46,33 @@ fn will_you_parse_let() {
     let expected_statemets = vec![
         Statement::Let(LetStatement {
             name: IdentNode {
-                token: Token::Ident("x".to_string()),
-                val: "x".to_string(),
+                token: Token::Ident { label: "x".into() },
+                label: "x".to_string(),
             },
             val: Expression::Primitive(PrimitiveNode::IntegerLiteral(5)),
         }),
         Statement::Let(LetStatement {
             name: IdentNode {
-                token: Token::Ident("y".to_string()),
-                val: "y".to_string(),
+                token: Token::Ident { label: "y".into() },
+                label: "y".to_string(),
             },
             val: Expression::Primitive(PrimitiveNode::IntegerLiteral(10)),
         }),
         Statement::Let(LetStatement {
             name: IdentNode {
-                token: Token::Ident("flag".to_string()),
-                val: "flag".to_string(),
+                token: Token::Ident { label: "flag".to_string() },
+                label: "flag".to_string(),
             },
             val: Expression::Primitive(PrimitiveNode::BooleanLiteral(false)),
         }),
         Statement::Let(LetStatement {
             name: IdentNode {
-                token: Token::Ident("foobar".to_string()),
-                val: "foobar".to_string(),
+                token: Token::Ident { label: "foobar".to_string() },
+                label: "foobar".to_string(),
             },
             val: Expression::Identifier(IdentNode {
-                token: Token::Ident("y".to_string()),
-                val: "y".to_string(),
+                token: Token::Ident { label: "y".to_string() },
+                label: "y".to_string(),
             }),
         }),
     ];

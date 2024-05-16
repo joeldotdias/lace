@@ -3,8 +3,6 @@ pub mod token;
 #[cfg(test)]
 mod tests;
 
-use std::u8;
-
 use token::{LiteralType, Token};
 
 /// Iterator over the code
@@ -59,7 +57,9 @@ impl Lexer {
             b'*' => Token::Asterisk,
             b'/' => {
                 if self.peek() == b'/' {
-                    Token::LineComment(self.read_line_comment())
+                    self.read_line_comment()
+                } else if self.peek() == b'*' {
+                    self.read_block_comment()
                 } else {
                     Token::ForwardSlash
                 }
@@ -116,20 +116,14 @@ impl Lexer {
                     "true" => Token::True,
                     "false" => Token::False,
                     "return" => Token::Return,
-                    _ => Token::Ident(ident),
+                    _ => Token::Ident { label: ident },
                 };
             }
             b'0'..=b'9' => {
-                return Token::Literal {
-                    kind: LiteralType::Int,
-                    val: self.read_int(),
-                }
+                return self.read_int();
             }
             b'"' => {
-                return Token::Literal {
-                    kind: LiteralType::Str,
-                    val: self.read_str(),
-                }
+                return self.read_str();
             }
             0 => Token::Eof,
             _ => Token::Illegal,
@@ -141,15 +135,24 @@ impl Lexer {
     }
 
     fn peek(&self) -> u8 {
-        if self.read_position >= self.input.len() {
+        if self.reached_end_of_input() {
             0
         } else {
             self.input[self.read_position]
         }
     }
 
+    // peeks 2 bytes ahead
+    fn peek_peek(&self) -> u8 {
+        if self.read_position >= self.input.len() - 1 {
+            0
+        } else {
+            self.input[self.read_position + 1]
+        }
+    }
+
     fn read_char(&mut self) {
-        if self.read_position >= self.input.len() {
+        if self.reached_end_of_input() {
             self.curr_ch = 0; // set ch to 0 if we reach end of input
         } else {
             self.curr_ch = self.input[self.read_position];
@@ -172,17 +175,20 @@ impl Lexer {
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
     }
 
-    fn read_int(&mut self) -> String {
+    fn read_int(&mut self) -> Token {
         let pos = self.position;
 
         while self.curr_ch.is_ascii_digit() {
             self.read_char();
         }
 
-        String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
+        Token::Literal {
+            kind: LiteralType::Int,
+            val: String::from_utf8_lossy(&self.input[pos..self.position]).to_string(),
+        }
     }
 
-    fn read_str(&mut self) -> String {
+    fn read_str(&mut self) -> Token {
         self.read_char(); // skip the opening "
 
         let mut estr = String::new();
@@ -199,17 +205,20 @@ impl Lexer {
 
         self.read_char(); // skip the closing "
 
-        estr
+        Token::Literal {
+            kind: LiteralType::Str,
+            val: estr,
+        }
     }
 
-    fn read_line_comment(&mut self) -> String {
+    fn read_line_comment(&mut self) -> Token {
         // skip the '//' which denotes start of a comment
         self.read_char();
         self.read_char();
 
         let pos = self.position;
 
-        while self.curr_ch != b'\n' && self.read_position < self.input.len() {
+        while self.curr_ch != b'\n' && !self.reached_end_of_input() {
             self.read_char();
         }
 
@@ -217,12 +226,43 @@ impl Lexer {
 
         self.read_char();
 
-        cm_str
+        Token::LineComment { content: cm_str }
+    }
+
+    fn read_block_comment(&mut self) -> Token {
+        // skip the '/*' which denotes start of a comment
+        self.read_char();
+        self.read_char();
+
+        let pos = self.position;
+        let mut terminated = true;
+
+        while self.peek() != b'*' || self.peek_peek() != b'/' {
+            if self.reached_end_of_input() {
+                terminated = false;
+                break;
+            }
+
+            self.read_char();
+        }
+
+        let cm_str = String::from_utf8_lossy(&self.input[pos..self.position + 1]).to_string();
+
+        self.read_char();
+
+        Token::BlockComment {
+            content: cm_str,
+            terminated,
+        }
     }
 
     fn skip_whitespace(&mut self) {
         while self.curr_ch.is_ascii_whitespace() {
             self.read_char();
         }
+    }
+
+    fn reached_end_of_input(&self) -> bool {
+        self.read_position >= self.input.len()
     }
 }

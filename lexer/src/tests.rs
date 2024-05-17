@@ -43,6 +43,7 @@ fn will_you_lex_some_code() {
         let result = add(five, ten);
         let greet = "Hi, my age is 10";
         let flag = true;
+        let ch = 'b';
         "#;
 
     let tokens = vec![
@@ -91,7 +92,7 @@ fn will_you_lex_some_code() {
         Token::Ident { label: "greet".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Str,
+            kind: LiteralType::Str { terminated: true },
             val: String::from("Hi, my age is 10"),
         },
         Token::Semicolon,
@@ -99,6 +100,14 @@ fn will_you_lex_some_code() {
         Token::Ident { label: "flag".into() },
         Token::Assign,
         Token::True,
+        Token::Semicolon,
+        Token::Let,
+        Token::Ident { label: "ch".into() },
+        Token::Assign,
+        Token::Literal {
+            kind: LiteralType::Char { terminated: true },
+            val: String::from("b"),
+        },
         Token::Semicolon,
         Token::Eof,
     ];
@@ -326,7 +335,7 @@ fn will_you_escape() {
         Token::Ident { label: "msg".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Str,
+            kind: LiteralType::Str { terminated: true },
             val: String::from(r#"He said, "Lemons taste good.""#)
         },
         Token::Semicolon,
@@ -334,7 +343,7 @@ fn will_you_escape() {
         Token::Ident { label: "other".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Str,
+            kind: LiteralType::Str { terminated: true },
             val: String::from(r#"Escape the \escape"#)
         },
         Token::Semicolon,
@@ -377,7 +386,7 @@ block comment */
 }
 
 #[test]
-fn will_you_detect_unterminated_comment() {
+fn detect_unterminated_comment() {
     let input = r#"
         /*This is an
 unterminated
@@ -385,6 +394,21 @@ block comment"#;
 
     let tokens = vec![
         Token::BlockComment { content: "This is an\nunterminated\nblock comment".into(), terminated: false}
+    ];
+
+    validate_tokens(input, tokens)
+}
+
+#[test]
+fn detect_unterminated_string() {
+    let input = r#"let s = "unterm;"#;
+
+    let tokens = vec![
+        Token::Let,
+        Token::Ident { label: "s".into() },
+        Token::Assign,
+        Token::Literal { kind: LiteralType::Str { terminated: false }, val: "unterm".into() },
+        Token::Semicolon
     ];
 
     validate_tokens(input, tokens)

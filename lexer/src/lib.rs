@@ -27,7 +27,7 @@ impl Lexer {
             curr_ch: 0,
         };
 
-        lexer.read_char();
+        lexer.read_byte();
 
         lexer
     }
@@ -48,7 +48,7 @@ impl Lexer {
             b'-' => Token::Minus,
             b'!' => {
                 if self.peek() == b'=' {
-                    self.read_char();
+                    self.read_byte();
                     Token::NotEqual
                 } else {
                     Token::Bang
@@ -67,7 +67,7 @@ impl Lexer {
             b'%' => Token::Modulo,
             b'<' => {
                 if self.peek() == b'=' {
-                    self.read_char();
+                    self.read_byte();
                     Token::LessThanEqual
                 } else {
                     Token::LessThan
@@ -75,7 +75,7 @@ impl Lexer {
             }
             b'>' => {
                 if self.peek() == b'=' {
-                    self.read_char();
+                    self.read_byte();
                     Token::GreaterThanEqual
                 } else {
                     Token::GreaterThan
@@ -83,7 +83,7 @@ impl Lexer {
             }
             b'=' => {
                 if self.peek() == b'=' {
-                    self.read_char();
+                    self.read_byte();
                     Token::Equal
                 } else {
                     Token::Assign
@@ -91,7 +91,7 @@ impl Lexer {
             }
             b'|' => {
                 if self.peek() == b'|' {
-                    self.read_char();
+                    self.read_byte();
                     Token::Or
                 } else {
                     Token::Illegal
@@ -99,7 +99,7 @@ impl Lexer {
             }
             b'&' => {
                 if self.peek() == b'&' {
-                    self.read_char();
+                    self.read_byte();
                     Token::And
                 } else {
                     Token::Illegal
@@ -122,6 +122,9 @@ impl Lexer {
             b'0'..=b'9' => {
                 return self.read_int();
             }
+            b'\'' => {
+                return self.read_char();
+            }
             b'"' => {
                 return self.read_str();
             }
@@ -129,7 +132,7 @@ impl Lexer {
             _ => Token::Illegal,
         };
 
-        self.read_char();
+        self.read_byte();
 
         token
     }
@@ -151,7 +154,7 @@ impl Lexer {
         }
     }
 
-    fn read_char(&mut self) {
+    fn read_byte(&mut self) {
         if self.reached_end_of_input() {
             self.curr_ch = 0; // set ch to 0 if we reach end of input
         } else {
@@ -168,7 +171,7 @@ impl Lexer {
             || self.curr_ch == b'_'
             || self.curr_ch.is_ascii_digit()
         {
-            self.read_char();
+            self.read_byte();
         }
 
         // because we only support ASCII characters
@@ -179,7 +182,7 @@ impl Lexer {
         let pos = self.position;
 
         while self.curr_ch.is_ascii_digit() {
-            self.read_char();
+            self.read_byte();
         }
 
         Token::Literal {
@@ -189,50 +192,77 @@ impl Lexer {
     }
 
     fn read_str(&mut self) -> Token {
-        self.read_char(); // skip the opening "
+        self.read_byte(); // skip the opening "
 
         let mut estr = String::new();
+        let mut terminated = true;
 
         while self.curr_ch != b'"' {
             if self.curr_ch == b'\\' {
                 // if a backslash is found we skip it
                 // and read the next character as is
-                self.read_char();
+                self.read_byte();
             }
+
             estr.push(self.curr_ch.into());
-            self.read_char();
+            self.read_byte();
+
+            if self.reached_end_of_input() {
+                terminated = false;
+                break;
+            }
         }
 
-        self.read_char(); // skip the closing "
+        if terminated {
+            self.read_byte(); // skip the closing "
+        }
 
         Token::Literal {
-            kind: LiteralType::Str,
+            kind: LiteralType::Str { terminated },
             val: estr,
+        }
+    }
+
+    fn read_char(&mut self) -> Token {
+        self.read_byte();
+
+        let mut val = String::new();
+        val.push(self.curr_ch.into());
+        self.read_byte();
+
+        let terminated = self.curr_ch == b'\'';
+        if terminated {
+            self.read_byte();
+        }
+
+        Token::Literal {
+            kind: LiteralType::Char { terminated },
+            val,
         }
     }
 
     fn read_line_comment(&mut self) -> Token {
         // skip the '//' which denotes start of a comment
-        self.read_char();
-        self.read_char();
+        self.read_byte();
+        self.read_byte();
 
         let pos = self.position;
 
         while self.curr_ch != b'\n' && !self.reached_end_of_input() {
-            self.read_char();
+            self.read_byte();
         }
 
         let cm_str = String::from_utf8_lossy(&self.input[pos..self.position]).to_string();
 
-        self.read_char();
+        self.read_byte();
 
         Token::LineComment { content: cm_str }
     }
 
     fn read_block_comment(&mut self) -> Token {
         // skip the '/*' which denotes start of a comment
-        self.read_char();
-        self.read_char();
+        self.read_byte();
+        self.read_byte();
 
         let pos = self.position;
         let mut terminated = true;
@@ -243,12 +273,12 @@ impl Lexer {
                 break;
             }
 
-            self.read_char();
+            self.read_byte();
         }
 
         let cm_str = String::from_utf8_lossy(&self.input[pos..self.position + 1]).to_string();
 
-        self.read_char();
+        self.read_byte();
 
         Token::BlockComment {
             content: cm_str,
@@ -258,7 +288,7 @@ impl Lexer {
 
     fn skip_whitespace(&mut self) {
         while self.curr_ch.is_ascii_whitespace() {
-            self.read_char();
+            self.read_byte();
         }
     }
 

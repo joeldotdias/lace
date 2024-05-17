@@ -79,6 +79,7 @@ pub enum Token {
     // Comments
     /// //
     LineComment { content: String },
+    /// /* ... */
     BlockComment { content: String, terminated: bool },
 
     /// Unknown or unrecognizable tokens.
@@ -139,20 +140,27 @@ impl Token {
 }
 
 /// Valid datatypes.
-/// Booleans are just true and false tokens. Might be added in here later
+/// Booleans are just true and false tokens.
+/// They are put into literal nodes while constructing the AST
 #[derive(Debug, PartialEq, Clone)]
 pub enum LiteralType {
     /// 64 bit signed integer
     Int,
+    /// 64 bit signed floating point number
+    Float,
+    /// Characters
+    Char { terminated: bool },
     /// String
-    Str,
+    Str { terminated: bool },
 }
 
 impl Display for LiteralType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             LiteralType::Int => write!(f, "Int"),
-            LiteralType::Str => write!(f, "Str"),
+            LiteralType::Float => write!(f, "Float"),
+            LiteralType::Char { terminated: _ } => write!(f, "Char"),
+            LiteralType::Str { terminated: _ } => write!(f, "Str"),
         }
     }
 }

@@ -88,6 +88,7 @@ impl Display for FuncIssue {
         }
     }
 }
+
 pub struct FuncError {
     func_name: Option<String>,
     issue: FuncIssue,
@@ -143,21 +144,57 @@ impl ParserError for ExpectedIdent {
     }
 }
 
-pub struct ExpectedInteger {
+pub enum NumKind {
+    Int,
+    Float,
+}
+
+pub struct ExpectedNumber {
+    kind: NumKind,
     found: String,
 }
 
-impl From<String> for ExpectedInteger {
-    fn from(value: String) -> Self {
-        Self { found: value }
+impl ExpectedNumber {
+    pub fn new(kind: NumKind, found: String) -> Self {
+        Self { kind, found }
     }
 }
 
-impl ParserError for ExpectedInteger {
+impl ParserError for ExpectedNumber {
     fn log_err(&self) -> String {
-        format!("Expected an integer, received {}", self.found)
+        let kind = match self.kind {
+            NumKind::Int => "an integer",
+            NumKind::Float => "a character",
+        };
+
+        format!("Expected {}, received {}", kind, self.found)
     }
 }
+
+pub enum UnterminatedKind {
+    Char,
+    Str,
+}
+
+pub struct UnterminatedLiteral {
+    kind: UnterminatedKind,
+}
+
+impl From<UnterminatedKind> for UnterminatedLiteral {
+    fn from(value: UnterminatedKind) -> Self {
+        Self { kind: value }
+    }
+}
+
+impl ParserError for UnterminatedLiteral {
+    fn log_err(&self) -> String {
+        match self.kind {
+            UnterminatedKind::Char => "Unterminated character".into(),
+            UnterminatedKind::Str => "Unterminated string".into(),
+        }
+    }
+}
+
 
 pub struct BadExpectations {
     expected: Token,

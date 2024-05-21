@@ -1,13 +1,13 @@
 use core::panic;
 use std::fmt::Display;
 
-use lace_lexer::token::{LiteralType, Token};
+use lace_lexer::token::{LiteralKind, Token};
 
 use crate::{
     ast::{statement::BlockStatement, Expression, Precedence},
     errors::{
-        CondIssue, ExpectedIdent, ExpectedInteger, FuncError, FuncIssue, IncompleteConditional,
-        NoPrefixParser, ParserError,
+        CondIssue, ExpectedIdent, ExpectedNumber, FuncError, FuncIssue, IncompleteConditional,
+        NoPrefixParser, NumKind, ParserError, UnterminatedKind, UnterminatedLiteral,
     },
     Parser,
 };
@@ -48,6 +48,8 @@ impl IdentNode {
 #[derive(PartialEq, Debug, Clone)]
 pub enum PrimitiveNode {
     IntegerLiteral(i64),
+    FloatLiteral(f64),
+    CharLiteral(char),
     StringLiteral(String),
     BooleanLiteral(bool),
 }
@@ -56,6 +58,8 @@ impl Display for PrimitiveNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PrimitiveNode::IntegerLiteral(val) => write!(f, "{} (Int)", val),
+            PrimitiveNode::FloatLiteral(val) => write!(f, "{} (Float)", val),
+            PrimitiveNode::CharLiteral(val) => write!(f, "'{}' (Char)", val),
             PrimitiveNode::StringLiteral(val) => write!(f, "\"{}\" (Str)", val),
             PrimitiveNode::BooleanLiteral(val) => write!(f, "{} (Bool)", val),
         }
@@ -67,11 +71,26 @@ impl PrimitiveNode {
         match &parser.curr_token.clone() {
             Token::Literal { kind, val } => {
                 match kind {
-                    LiteralType::Int => match val.parse::<i64>() {
+                    LiteralKind::Int => match val.parse::<i64>() {
                         Ok(val) => Ok(PrimitiveNode::IntegerLiteral(val)),
-                        Err(_) => Err(Box::new(ExpectedInteger::from(val.to_string()))),
+                        Err(_) => Err(Box::new(ExpectedNumber::new(NumKind::Int, val.to_string()))),
                     },
-                    LiteralType::Str => Ok(PrimitiveNode::StringLiteral(val.into())),
+                    LiteralKind::Float => match val.parse::<f64>() {
+                        Ok(val) => Ok(PrimitiveNode::FloatLiteral(val)),
+                        Err(_) => Err(Box::new(ExpectedNumber::new(
+                            NumKind::Float,
+                            val.to_string(),
+                        ))),
+                    },
+                    LiteralKind::Char { terminated } => match terminated {
+                        // TODO: Maybe find a better way to do this
+                        true => Ok(PrimitiveNode::CharLiteral(val.chars().nth(0).unwrap())),
+                        false => Err(Box::new(UnterminatedLiteral::from(UnterminatedKind::Char))),
+                    },
+                    LiteralKind::Str { terminated } => match terminated {
+                        true => Ok(PrimitiveNode::StringLiteral(val.into())),
+                        false => Err(Box::new(UnterminatedLiteral::from(UnterminatedKind::Str))),
+                    },
                 }
             }
             Token::True => Ok(PrimitiveNode::BooleanLiteral(true)),
@@ -119,7 +138,11 @@ pub struct InfixOperator {
 
 impl Display for InfixOperator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} Infix({}) {}", self.left_expr, self.token, self.right_expr)
+        write!(
+            f,
+            "{} Infix({}) {}",
+            self.left_expr, self.token, self.right_expr
+        )
     }
 }
 
@@ -153,7 +176,10 @@ pub struct ConditionalOperator {
 
 impl Display for ConditionalOperator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut expr = format!("Conditonal => {{ condition => {} | consequence => {{\n{}}}", self.cond, self.consequence,);
+        let mut expr = format!(
+            "Conditonal => {{ condition => {} | consequence => {{\n{}}}",
+            self.cond, self.consequence,
+        );
 
         if let Some(alt) = &self.alternative {
             expr.push_str(format!(" | alternative => {{\n{}}}", alt).as_str())
@@ -226,8 +252,19 @@ impl Display for FunctionLiteral {
         let params: Vec<String> = self.params.iter().map(ToString::to_string).collect();
 
         match &self.name {
-            Some(name) => write!(f, "\nFunc => {{ Name => {} | Params => ({}) | Body => {{\n{}}}\n", name, params.join(", "), self.body),
-            None => write!(f, "Func\n--> Params => ({})\n-->{{\n{}}}", params.join(", "), self.body),
+            Some(name) => write!(
+                f,
+                "\nFunc => {{ Name => {} | Params => ({}) | Body => {{\n{}}}\n",
+                name,
+                params.join(", "),
+                self.body
+            ),
+            None => write!(
+                f,
+                "Func\n--> Params => ({})\n-->{{\n{}}}",
+                params.join(", "),
+                self.body
+            ),
         }
     }
 }
@@ -251,11 +288,7 @@ impl FunctionLiteral {
 
         let body = BlockStatement::parse(parser);
 
-        Ok(FunctionLiteral {
-            name,
-            params,
-            body,
-        })
+        Ok(FunctionLiteral { name, params, body })
     }
 
     fn parse_function_name(parser: &mut Parser) -> Option<String> {
@@ -311,7 +344,7 @@ impl Display for FunctionCall {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let args: Vec<String> = self.args.iter().map(ToString::to_string).collect();
 
-        write!(f, "{}({})", self.function, args.join(", "))
+        write!(f, "Fn Call {} => params {{ {} }}", self.function, args.join(", "))
     }
 }
 

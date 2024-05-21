@@ -3,11 +3,17 @@ name = "lace"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = [
+    "lexer",
+    "parser",
+    "eval",
+]
 
 [dependencies]
 lace-lexer = { path = "./lexer" }
 lace-parser = { path = "./parser" }
+lace-eval = { path = "./eval" }
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
@@ -15,9 +21,3 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 [[bench]]
 name = "lexer_bench"
 harness = false
-
-[workspace]
-members = [
-    "lexer",
-    "parser",
-]

@@ -9,7 +9,7 @@ pub enum Token {
     Ident { label: String },
 
     /// Values allocated to a variable
-    Literal { kind: LiteralType, val: String },
+    Literal { kind: LiteralKind, val: String },
 
     // Operators
     /// =
@@ -143,7 +143,7 @@ impl Token {
 /// Booleans are just true and false tokens.
 /// They are put into literal nodes while constructing the AST
 #[derive(Debug, PartialEq, Clone)]
-pub enum LiteralType {
+pub enum LiteralKind {
     /// 64 bit signed integer
     Int,
     /// 64 bit signed floating point number
@@ -154,13 +154,19 @@ pub enum LiteralType {
     Str { terminated: bool },
 }
 
-impl Display for LiteralType {
+impl Display for LiteralKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LiteralType::Int => write!(f, "Int"),
-            LiteralType::Float => write!(f, "Float"),
-            LiteralType::Char { terminated: _ } => write!(f, "Char"),
-            LiteralType::Str { terminated: _ } => write!(f, "Str"),
+            LiteralKind::Int => write!(f, "Int"),
+            LiteralKind::Float => write!(f, "Float"),
+            LiteralKind::Char { terminated } => match terminated {
+                true => write!(f, "Char"),
+                false => write!(f, "Unterm Char"),
+            },
+            LiteralKind::Str { terminated } => match terminated {
+                true => write!(f, "Str"),
+                false => write!(f, "Unterm Str"),
+            },
         }
     }
 }

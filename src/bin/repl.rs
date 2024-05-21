@@ -3,6 +3,7 @@ use std::{
     process,
 };
 
+use lace_eval::{object::Object, Eval};
 use lace_lexer::Lexer;
 use lace_parser::Parser;
 
@@ -56,37 +57,27 @@ fn main() {
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
+        let mut eval = Eval {};
 
         let program = parser.parse_program();
 
-        // program.statements.iter().for_each(|p| {
-            match writeln!(&stdout, "{}", program) {
-                Ok(_) => {
-                    prompt_colour = PromptColour::Works;
-                }
-                Err(_) => {
+        match parser.errors.is_empty() {
+            true => {
+                prompt_colour = PromptColour::Works;
+                let v = eval.eval(program);
+                if let Object::Error(err) = v {
+                    writeln!(&stderr, "{}", err).unwrap();
                     prompt_colour = PromptColour::Error;
+                } else {
+                    writeln!(&stdout, "{}", v).unwrap();
                 }
             }
-        // })
-
-
-
-        // loop {
-        //     // let token = lexer.next_token();
-        //
-        //     if token.reached_eof() {
-        //         break;
-        //     }
-        //
-        //     match writeln!(&stdout, "{}", token) {
-        //         Ok(_) => {
-        //             prompt_colour = PromptColour::Works;
-        //         }
-        //         Err(_) => {
-        //             prompt_colour = PromptColour::Error;
-        //         }
-        //     };
-        // }
+            false => {
+                prompt_colour = PromptColour::Error;
+                parser.errors.iter().for_each(|e| {
+                    println!("{}", e.log_err());
+                })
+            }
+        }
     }
 }

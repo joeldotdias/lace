@@ -1,6 +1,6 @@
 use std::fs;
 
-use super::{Lexer, LiteralType, Token};
+use super::{Lexer, LiteralKind, Token};
 
 fn validate_tokens(input: &str, tokens: Vec<Token>) {
     let mut lexer = Lexer::new(input.into());
@@ -44,6 +44,7 @@ fn will_you_lex_some_code() {
         let greet = "Hi, my age is 10";
         let flag = true;
         let ch = 'b';
+        let fl = 40.627;
         "#;
 
     let tokens = vec![
@@ -51,7 +52,7 @@ fn will_you_lex_some_code() {
         Token::Ident { label: "five".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("5"),
         },
         Token::Semicolon,
@@ -59,7 +60,7 @@ fn will_you_lex_some_code() {
         Token::Ident { label: "ten".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("10"),
         },
         Token::Semicolon,
@@ -92,7 +93,7 @@ fn will_you_lex_some_code() {
         Token::Ident { label: "greet".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Str { terminated: true },
+            kind: LiteralKind::Str { terminated: true },
             val: String::from("Hi, my age is 10"),
         },
         Token::Semicolon,
@@ -105,8 +106,16 @@ fn will_you_lex_some_code() {
         Token::Ident { label: "ch".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Char { terminated: true },
+            kind: LiteralKind::Char { terminated: true },
             val: String::from("b"),
+        },
+        Token::Semicolon,
+        Token::Let,
+        Token::Ident { label: "fl".into() },
+        Token::Assign,
+        Token::Literal {
+            kind: LiteralKind::Float,
+            val: String::from("40.627"),
         },
         Token::Semicolon,
         Token::Eof,
@@ -141,7 +150,7 @@ fn will_you_lex_more_code() {
         Token::Ident { label: "five".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("5"),
         },
         Token::Semicolon,
@@ -149,7 +158,7 @@ fn will_you_lex_more_code() {
         Token::Ident { label: "ten".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("10"),
         },
         Token::Semicolon,
@@ -183,35 +192,35 @@ fn will_you_lex_more_code() {
         Token::Minus,
         Token::ForwardSlash,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("5"),
         },
         Token::Asterisk,
         Token::Semicolon,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("5"),
         },
         Token::LessThan,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("10"),
         },
         Token::GreaterThan,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("5"),
         },
         Token::Semicolon,
         Token::If,
         Token::LParen,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("5"),
         },
         Token::LessThan,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("10"),
         },
         Token::RParen,
@@ -227,32 +236,32 @@ fn will_you_lex_more_code() {
         Token::Semicolon,
         Token::RCurly,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("5"),
         },
         Token::LessThanEqual,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("10"),
         },
         Token::Semicolon,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("10"),
         },
         Token::Equal,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("10"),
         },
         Token::Semicolon,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("10"),
         },
         Token::NotEqual,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("9"),
         },
         Token::Semicolon,
@@ -277,7 +286,7 @@ fn will_you_lex_from_a_file() {
         Token::Ident { label: "num1".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("69"),
         },
         Token::Semicolon,
@@ -285,7 +294,7 @@ fn will_you_lex_from_a_file() {
         Token::Ident { label: "num2".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Int,
+            kind: LiteralKind::Int,
             val: String::from("420"),
         },
         Token::Semicolon,
@@ -335,7 +344,7 @@ fn will_you_escape() {
         Token::Ident { label: "msg".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Str { terminated: true },
+            kind: LiteralKind::Str { terminated: true },
             val: String::from(r#"He said, "Lemons taste good.""#)
         },
         Token::Semicolon,
@@ -343,7 +352,7 @@ fn will_you_escape() {
         Token::Ident { label: "other".into() },
         Token::Assign,
         Token::Literal {
-            kind: LiteralType::Str { terminated: true },
+            kind: LiteralKind::Str { terminated: true },
             val: String::from(r#"Escape the \escape"#)
         },
         Token::Semicolon,
@@ -370,14 +379,14 @@ block comment */
         Token::Let,
         Token::Ident { label: "count".into() },
         Token::Assign,
-        Token::Literal { kind: LiteralType::Int, val: "0".into() },
+        Token::Literal { kind: LiteralKind::Int, val: "0".into() },
         Token::Semicolon,
         Token::LineComment { content: " This is a counter".into() },
         Token::Ident { label: "count".into() },
         Token::Assign,
         Token::Ident { label: "count".into() },
         Token::Plus,
-        Token::Literal { kind: LiteralType::Int, val: "1".into() },
+        Token::Literal { kind: LiteralKind::Int, val: "1".into() },
         Token::Semicolon,
         Token::BlockComment { content: " This is a\nblock comment ".into(), terminated: true }
     ];
@@ -407,7 +416,7 @@ fn detect_unterminated_string() {
         Token::Let,
         Token::Ident { label: "s".into() },
         Token::Assign,
-        Token::Literal { kind: LiteralType::Str { terminated: false }, val: "unterm".into() },
+        Token::Literal { kind: LiteralKind::Str { terminated: false }, val: "unterm".into() },
         Token::Semicolon
     ];
 

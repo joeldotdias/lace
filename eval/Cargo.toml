@@ -1,0 +1,8 @@
+[package]
+name = "lace-eval"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lace-lexer = { path = "../lexer" }
+lace-parser = { path = "../parser" }

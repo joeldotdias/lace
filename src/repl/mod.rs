@@ -1,3 +1,5 @@
+pub mod prompt;
+
 use std::{
     io::{self, Stderr, Stdin, Stdout, Write},
     process,
@@ -7,44 +9,20 @@ use lace_eval::{object::Object, Eval};
 use lace_lexer::Lexer;
 use lace_parser::Parser;
 
-#[derive(Default)]
-enum PromptColour {
-    #[default]
-    Works,
-    Error,
-}
+use self::prompt::ReplPrompt;
 
-impl PromptColour {
-    fn colour(&self) -> &str {
-        match self {
-            PromptColour::Works => "\x1b[92m",
-            PromptColour::Error => "\x1b[91m",
-        }
-    }
-}
-
-const LOGO: &str = "
-___        ___
-.'|        .'|=|`.     .'|=|_.'   .'|=|_.'
-.'  |      .'  | |  `. .'  |      .'  |  ___
-|   |      |   |=|   | |   |      |   |=|_.'
-|   |  ___ |   | |   | `.  |  ___ |   |  ___
-|___|=|_.' |___| |___|   `.|=|_.' |___|=|_.'
-
-
-";
-
-const PROMPT: &str = ">> ";
-
-fn main() {
+pub fn run_repl() {
     let (stdin, mut stdout, stderr): (Stdin, Stdout, Stderr) =
         (io::stdin(), io::stdout(), io::stderr());
-    let mut prompt_colour = PromptColour::default();
 
-    write!(&stdout, "{}", LOGO).unwrap();
+    let mut prompt = ReplPrompt::default();
+
+    write!(&stdout, "{}", prompt.logo).unwrap();
+
+    let mut eval = Eval::default();
 
     loop {
-        write!(&stdout, "{}{}\x1b[0m", prompt_colour.colour(), PROMPT).unwrap();
+        write!(&stdout, "{}{}\x1b[0m", prompt.colour(), prompt.symbol).unwrap();
 
         stdout.flush().unwrap();
 
@@ -57,23 +35,24 @@ fn main() {
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
-        let mut eval = Eval {};
 
         let program = parser.parse_program();
 
         match parser.errors.is_empty() {
             true => {
-                prompt_colour = PromptColour::Works;
+                prompt.works();
                 let v = eval.eval(program);
                 if let Object::Error(err) = v {
                     writeln!(&stderr, "{}", err).unwrap();
-                    prompt_colour = PromptColour::Error;
+                    prompt.errored();
+                } else if let Object::Null = v {
+                    // let the prompt remain empty if there is expression is evaluated to null
                 } else {
                     writeln!(&stdout, "{}", v).unwrap();
                 }
             }
             false => {
-                prompt_colour = PromptColour::Error;
+                prompt.errored();
                 parser.errors.iter().for_each(|e| {
                     println!("{}", e.log_err());
                 })

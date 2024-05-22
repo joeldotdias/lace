@@ -1,14 +1,35 @@
+pub mod environment;
+pub mod lace_lib;
 pub mod object;
 
+use std::{cell::RefCell, rc::Rc};
+
+use crate::{environment::Environment, object::Object};
 use lace_lexer::token::Token;
 use lace_parser::ast::{
-    nodes::{ConditionalOperator, PrimitiveNode},
+    nodes::{ConditionalOperator, IdentNode, PrimitiveNode},
     statement::{BlockStatement, Statement},
     Expression, Program,
 };
-use object::Object;
+use object::{builtin::BuiltinFunction, function::Function};
 
-pub struct Eval {}
+pub struct Eval {
+    environment: Rc<RefCell<Environment>>,
+}
+
+impl Default for Eval {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Eval {
+    pub fn new() -> Self {
+        Self {
+            environment: Rc::new(RefCell::new(Environment::new())),
+        }
+    }
+}
 
 impl Eval {
     pub fn eval(&mut self, program: Program) -> Object {
@@ -36,10 +57,17 @@ impl Eval {
 
     fn eval_statement(&mut self, statement: Statement) -> Object {
         match statement {
-            Statement::Let(_) => todo!(),
+            Statement::Let(st) => {
+                let val = self.eval_expression(st.val);
+                if val.errored() {
+                    return val;
+                }
+                self.environment.borrow_mut().upsert(st.name.label, val);
+                Object::Null
+            }
             Statement::Return(ret) => {
                 let return_val = self.eval_expression(ret.returnable);
-                if let Object::Error(_) = return_val {
+                if return_val.errored() {
                     return_val
                 } else {
                     Object::Return(Box::new(return_val))
@@ -51,7 +79,7 @@ impl Eval {
 
     fn eval_expression(&mut self, expression: Expression) -> Object {
         match expression {
-            Expression::Identifier(_) => todo!(),
+            Expression::Identifier(ident) => self.eval_ident(ident),
             Expression::Primitive(primitive) => Self::eval_primitive(primitive),
             Expression::Prefix(prefix) => {
                 let right = self.eval_expression(*prefix.right_expr);
@@ -66,9 +94,62 @@ impl Eval {
                 Self::eval_infix(&infix.token, left, right)
             }
             Expression::Conditional(conditional) => self.eval_conditional(conditional),
-            Expression::FunctionDef(_) => todo!(),
-            Expression::FunctionCall(_) => todo!(),
+            Expression::FunctionDef(func) => {
+                let params = func.params;
+                let body = func.body;
+
+                Object::Function(Function {
+                    params,
+                    body,
+                    environment: Rc::clone(&self.environment),
+                })
+            }
+            Expression::FunctionCall(fncall) => {
+                let function = self.eval_expression(*fncall.function);
+                if function.errored() {
+                    return function;
+                }
+
+                let args = self.eval_expressions(fncall.args);
+                if args.len() == 1 && args[0].errored() {
+                    return args[0].clone();
+                }
+
+                self.apply_func(function, args)
+            }
+            Expression::Array(arr) => {
+                let elements = self.eval_expressions(arr.elements);
+                if elements.len() == 1 && elements[0].errored() {
+                    elements[0].clone()
+                } else {
+                    Object::Array(elements)
+                }
+            }
         }
+    }
+
+    fn apply_func(&mut self, function: Object, args: Vec<Object>) -> Object {
+        match function {
+            Object::Function(func) => {
+                let extended_env = Self::extended_func_env(&func, args);
+                let curr_env = Rc::clone(&self.environment);
+                self.environment = Rc::new(RefCell::new(extended_env));
+                let eval_body = self.eval_block(func.body);
+                self.environment = curr_env;
+                eval_body
+            }
+            Object::Builtin(bfunc) => bfunc.apply(args),
+            _ => Object::Error(format!("{} not found", function)),
+        }
+    }
+
+    fn extended_func_env(function: &Function, args: Vec<Object>) -> Environment {
+        let mut env = Environment::new_enclosed_env(Rc::clone(&function.environment));
+        for (param, arg) in function.params.iter().zip(args) {
+            env.upsert(param.label.clone(), arg);
+        }
+
+        env
     }
 
     fn eval_conditional(&mut self, conditional: ConditionalOperator) -> Object {
@@ -84,6 +165,30 @@ impl Eval {
         } else {
             Object::Null
         }
+    }
+
+    fn eval_ident(&self, ident: IdentNode) -> Object {
+        match self.environment.borrow_mut().get(&ident.label) {
+            Some(id) => id,
+            None => match BuiltinFunction::try_builtin(&ident.label) {
+                Some(blt) => blt,
+                None => Object::Error("Identifier not found".into()),
+            },
+        }
+    }
+
+    fn eval_expressions(&mut self, expressions: Vec<Expression>) -> Vec<Object> {
+        let mut res = Vec::new();
+
+        for expression in expressions {
+            let eval_expr = self.eval_expression(expression);
+            if eval_expr.errored() {
+                return vec![eval_expr];
+            }
+            res.push(eval_expr);
+        }
+
+        res
     }
 
     fn eval_primitive(primitive: PrimitiveNode) -> Object {
@@ -136,7 +241,11 @@ impl Eval {
             }
             (Object::Float(x), Object::Float(y)) => Self::eval_float_infix_expr(operator, x, y),
             (Object::Boolean(x), Object::Boolean(y)) => Self::eval_bool_infix_expr(operator, x, y),
-            _ => Object::Error("Non-matching datatypes".into()),
+            (Object::Str(st), Object::Str(sr)) => Self::eval_str_infix_expr(operator, st, sr),
+            _ => Object::Error(format!(
+                "Cannot perform {} operation on this datatype",
+                operator
+            )),
         }
     }
 
@@ -181,6 +290,28 @@ impl Eval {
             Token::And => Object::Boolean(left && right),
             Token::Or => Object::Boolean(left || right),
             _ => unreachable!(),
+        }
+    }
+
+    pub fn eval_str_infix_expr(operator: &Token, left: String, right: String) -> Object {
+        match operator {
+            Token::Plus => Object::Str(format!("{}{}", left, right)),
+            Token::Minus => {
+                if left.ends_with(&right) {
+                    Object::Str(
+                        left.as_str()
+                            .strip_suffix(right.as_str())
+                            .unwrap()
+                            .to_string(),
+                    )
+                } else {
+                    Object::Error(format!("Cannot subtract {} from {}", right, left))
+                }
+            }
+            _ => Object::Error(format!(
+                "{} operation cannot be performed on strings",
+                operator
+            )),
         }
     }
 }

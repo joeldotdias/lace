@@ -14,6 +14,8 @@ use crate::{
     Parser, Token,
 };
 
+use self::nodes::ArrayLiteral;
+
 #[derive(Default)]
 pub struct Program {
     pub statements: Vec<Statement>,
@@ -40,6 +42,7 @@ pub enum Expression {
     Conditional(ConditionalOperator),
     FunctionDef(FunctionLiteral),
     FunctionCall(FunctionCall),
+    Array(ArrayLiteral),
 }
 
 impl Display for Expression {
@@ -52,6 +55,7 @@ impl Display for Expression {
             Expression::Conditional(x) => write!(f, "{x}"),
             Expression::FunctionDef(x) => write!(f, "{x}"),
             Expression::FunctionCall(x) => write!(f, "{x}"),
+            Expression::Array(x) => write!(f, "{}", x),
         }
     }
 }
@@ -70,6 +74,7 @@ impl Expression {
             Token::LParen => Self::parse_grouped_expr(parser),
             Token::If => ConditionalOperator::parse(parser).map(Expression::Conditional),
             Token::Function => FunctionLiteral::parse(parser).map(Expression::FunctionDef),
+            Token::LBracket => ArrayLiteral::parse(parser).map(Expression::Array),
             _ => return Err(Box::new(NoPrefixParser::from(parser.curr_token.clone()))),
         }?;
 

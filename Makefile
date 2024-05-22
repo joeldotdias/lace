@@ -1,2 +1,2 @@
 repl:
-	cargo run --bin repl
+	cargo run --bin lace

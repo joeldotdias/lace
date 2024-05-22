@@ -344,7 +344,12 @@ impl Display for FunctionCall {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let args: Vec<String> = self.args.iter().map(ToString::to_string).collect();
 
-        write!(f, "Fn Call {} => params {{ {} }}", self.function, args.join(", "))
+        write!(
+            f,
+            "Fn Call {} => params {{ {} }}",
+            self.function,
+            args.join(", ")
+        )
     }
 }
 
@@ -356,5 +361,29 @@ impl FunctionCall {
             function: Box::new(function),
             args,
         })
+    }
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct ArrayLiteral {
+    pub elements: Vec<Expression>,
+}
+
+impl Display for ArrayLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let elements = self
+            .elements
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>();
+
+        write!(f, "Array => {{ Elements => [ {} ] }}", elements.join(", "))
+    }
+}
+
+impl ArrayLiteral {
+    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+        let elements = Expression::parse_expr_list(parser, &Token::RBracket)?;
+        Ok(Self { elements })
     }
 }

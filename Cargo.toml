@@ -18,6 +18,9 @@ lace-eval = { path = "./eval" }
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
+[[bin]]
+name = "lace"
+
 [[bench]]
 name = "lexer_bench"
 harness = false

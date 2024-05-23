@@ -14,7 +14,7 @@ use crate::{
     Parser, Token,
 };
 
-use self::nodes::ArrayLiteral;
+use self::nodes::{ArrayLiteral, IndexAccess};
 
 #[derive(Default)]
 pub struct Program {
@@ -43,6 +43,7 @@ pub enum Expression {
     FunctionDef(FunctionLiteral),
     FunctionCall(FunctionCall),
     Array(ArrayLiteral),
+    ArrIndex(IndexAccess),
 }
 
 impl Display for Expression {
@@ -56,6 +57,7 @@ impl Display for Expression {
             Expression::FunctionDef(x) => write!(f, "{x}"),
             Expression::FunctionCall(x) => write!(f, "{x}"),
             Expression::Array(x) => write!(f, "{}", x),
+            Expression::ArrIndex(x) => write!(f, "{}", x),
         }
     }
 }
@@ -66,7 +68,7 @@ impl Expression {
         precedence: Precedence,
     ) -> Result<Expression, Box<dyn ParserError>> {
         let mut left_expr = match parser.curr_token.clone() {
-            Token::Ident { label: _ } => (IdentNode::parse(parser)).map(Expression::Identifier),
+            Token::Ident { label: _ } => IdentNode::parse(parser).map(Expression::Identifier),
             Token::Literal { kind: _, val: _ } | Token::False | Token::True => {
                 PrimitiveNode::parse(parser).map(Expression::Primitive)
             }
@@ -100,6 +102,11 @@ impl Expression {
                 Token::LParen => {
                     parser.next_token();
                     left_expr = Expression::FunctionCall(FunctionCall::parse(parser, left_expr)?);
+                }
+
+                Token::LBracket => {
+                    parser.next_token();
+                    left_expr = Expression::ArrIndex(IndexAccess::parse(parser, left_expr)?);
                 }
 
                 _ => return Ok(left_expr),

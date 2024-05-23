@@ -32,7 +32,7 @@ impl Display for Object {
             Object::Builtin(bfunc) => write!(f, "{}", bfunc),
             Object::Array(arr) => {
                 let elements = arr.iter().map(ToString::to_string).collect::<Vec<String>>();
-                write!(f, "[ {} ]", elements.join(", "))
+                write!(f, "[{}]", elements.join(", "))
             }
             Object::Return(obj) => write!(f, "{}", obj),
             Object::Null => write!(f, "NULL"),

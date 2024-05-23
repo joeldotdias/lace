@@ -7,7 +7,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{environment::Environment, object::Object};
 use lace_lexer::token::Token;
 use lace_parser::ast::{
-    nodes::{ConditionalOperator, IdentNode, PrimitiveNode},
+    nodes::{ConditionalOperator, IdentNode, IndexAccess, PrimitiveNode},
     statement::{BlockStatement, Statement},
     Expression, Program,
 };
@@ -104,13 +104,13 @@ impl Eval {
                     environment: Rc::clone(&self.environment),
                 })
             }
-            Expression::FunctionCall(fncall) => {
-                let function = self.eval_expression(*fncall.function);
+            Expression::FunctionCall(fn_call) => {
+                let function = self.eval_expression(*fn_call.function);
                 if function.errored() {
                     return function;
                 }
 
-                let args = self.eval_expressions(fncall.args);
+                let args = self.eval_expressions(fn_call.args);
                 if args.len() == 1 && args[0].errored() {
                     return args[0].clone();
                 }
@@ -125,6 +125,7 @@ impl Eval {
                     Object::Array(elements)
                 }
             }
+            Expression::ArrIndex(index_access) => self.eval_index_expr(index_access),
         }
     }
 
@@ -138,7 +139,24 @@ impl Eval {
                 self.environment = curr_env;
                 eval_body
             }
-            Object::Builtin(bfunc) => bfunc.apply(args),
+            Object::Builtin(bfunc) => {
+                let returned = bfunc.apply(args.clone());
+                if let BuiltinFunction::Read = bfunc {
+                    if let Object::Error(_) = returned {
+                        return returned;
+                    } else {
+                        let var_name = match args[0].clone() {
+                            Object::Str(label) => label,
+                            _ => {
+                                return Object::Error("Couldn't find variable".into());
+                            }
+                        };
+                        self.environment.borrow_mut().upsert(var_name, returned);
+                        return Object::Null;
+                    }
+                }
+                returned
+            }
             _ => Object::Error(format!("{} not found", function)),
         }
     }
@@ -150,6 +168,34 @@ impl Eval {
         }
 
         env
+    }
+
+    fn eval_index_expr(&mut self, index_expr: IndexAccess) -> Object {
+        let arr = self.eval_expression(*index_expr.arr);
+        if arr.errored() {
+            return arr;
+        }
+
+        let index = self.eval_expression(*index_expr.index);
+        if index.errored() {
+            return index;
+        }
+
+        match (arr, index) {
+            (Object::Array(a), Object::Integer(i)) => {
+                let l = a.len();
+                if i < 0 {
+                    return Object::Error("Negative indexing isn't valid".into());
+                } else if i >= l as i64 {
+                    return Object::Error(format!(
+                        "Index {} out of bounds for an array of length {}",
+                        i, l
+                    ));
+                }
+                a[i as usize].clone()
+            }
+            _ => todo!(),
+        }
     }
 
     fn eval_conditional(&mut self, conditional: ConditionalOperator) -> Object {
@@ -228,13 +274,14 @@ impl Eval {
     }
 
     pub fn eval_infix(operator: &Token, left: Object, right: Object) -> Object {
-        if left.kind() != right.kind() {
-            return Object::Error(format!(
-                "{} and {} datatypes do not match",
-                left.kind(),
-                right.kind()
-            ));
-        }
+        // if left.kind() != right.kind() {
+        //     return Object::Error(format!(
+        //         "{} and {} datatypes do not match",
+        //         left.kind(),
+        //         right.kind()
+        //     ));
+        // }
+
         match (left, right) {
             (Object::Integer(x), Object::Integer(y)) => {
                 Self::eval_integer_infix_expr(operator, x, y)
@@ -242,6 +289,9 @@ impl Eval {
             (Object::Float(x), Object::Float(y)) => Self::eval_float_infix_expr(operator, x, y),
             (Object::Boolean(x), Object::Boolean(y)) => Self::eval_bool_infix_expr(operator, x, y),
             (Object::Str(st), Object::Str(sr)) => Self::eval_str_infix_expr(operator, st, sr),
+            (Object::Str(st), Object::Integer(i)) => {
+                Self::eval_str_infix_expr(operator, st, i.to_string())
+            }
             _ => Object::Error(format!(
                 "Cannot perform {} operation on this datatype",
                 operator
@@ -262,7 +312,10 @@ impl Eval {
             Token::GreaterThan => Object::Boolean(x > y),
             Token::LessThanEqual => Object::Boolean(x <= y),
             Token::GreaterThanEqual => Object::Boolean(x >= y),
-            _ => unreachable!(),
+            _ => {
+                println!("{}", operator);
+                unreachable!("No infix")
+            }
         }
     }
 
@@ -279,7 +332,10 @@ impl Eval {
             Token::GreaterThan => Object::Boolean(x > y),
             Token::LessThanEqual => Object::Boolean(x <= y),
             Token::GreaterThanEqual => Object::Boolean(x >= y),
-            _ => unreachable!(),
+            _ => {
+                println!("{}", operator);
+                unreachable!("No infix for float")
+            }
         }
     }
 
@@ -289,7 +345,7 @@ impl Eval {
             Token::NotEqual => Object::Boolean(left != right),
             Token::And => Object::Boolean(left && right),
             Token::Or => Object::Boolean(left || right),
-            _ => unreachable!(),
+            _ => unreachable!("No infix for bool"),
         }
     }
 

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::repl;
+use crate::{interpretter, repl};
 
 #[derive(Default)]
 pub struct InterpreterArgs {
@@ -24,8 +24,8 @@ impl From<Vec<String>> for InterpreterArgs {
 
 impl InterpreterArgs {
     pub fn run(&self) {
-        match self.file {
-            Some(_) => todo!(),
+        match &self.file {
+            Some(file_path) => interpretter::run_interpreter(file_path.clone()).unwrap(),
             None => repl::run_repl(),
         }
     }

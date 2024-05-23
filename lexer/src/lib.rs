@@ -42,6 +42,7 @@ impl Lexer {
             b')' => Token::RParen,
             b'[' => Token::LBracket,
             b']' => Token::RBracket,
+            b'.' => Token::Dot,
             b',' => Token::Comma,
             b';' => Token::Semicolon,
             b'+' => Token::Plus,

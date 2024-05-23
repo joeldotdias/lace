@@ -6,10 +6,15 @@ use std::fmt::Display;
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     /// Identifiers
-    Ident { label: String },
+    Ident {
+        label: String,
+    },
 
     /// Values allocated to a variable
-    Literal { kind: LiteralKind, val: String },
+    Literal {
+        kind: LiteralKind,
+        val: String,
+    },
 
     // Operators
     /// =
@@ -50,6 +55,8 @@ pub enum Token {
     GreaterThanEqual,
 
     // Delimiters
+    /// .
+    Dot,
     /// ,
     Comma,
     /// ;
@@ -78,9 +85,14 @@ pub enum Token {
 
     // Comments
     /// //
-    LineComment { content: String },
+    LineComment {
+        content: String,
+    },
     /// /* ... */
-    BlockComment { content: String, terminated: bool },
+    BlockComment {
+        content: String,
+        terminated: bool,
+    },
 
     /// Unknown or unrecognizable tokens.
     /// Includes emojis and other non ASCII characters.
@@ -110,6 +122,7 @@ impl Display for Token {
             Token::GreaterThanEqual => write!(f, "GreaterThanEqual"),
             Token::Or => write!(f, "Or"),
             Token::And => write!(f, "And"),
+            Token::Dot => write!(f, "Dot"),
             Token::Comma => write!(f, "Comma"),
             Token::Semicolon => write!(f, "Semicolon"),
             Token::LParen => write!(f, "Lparen"),
@@ -126,7 +139,10 @@ impl Display for Token {
             Token::True => write!(f, "True"),
             Token::False => write!(f, "False"),
             Token::LineComment { content } => write!(f, "LineComment {}", content),
-            Token::BlockComment { content, terminated: _ } => write!(f, "BlockComment {}", content),
+            Token::BlockComment {
+                content,
+                terminated: _,
+            } => write!(f, "BlockComment {}", content),
             Token::Eof => write!(f, "Eof"),
             Token::Illegal => write!(f, "Illegal"),
         }

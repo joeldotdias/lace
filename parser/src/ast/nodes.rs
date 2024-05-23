@@ -387,3 +387,33 @@ impl ArrayLiteral {
         Ok(Self { elements })
     }
 }
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct IndexAccess {
+    pub arr: Box<Expression>,
+    pub index: Box<Expression>,
+}
+
+impl Display for IndexAccess {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Array => {} | Index => {}", self.arr, self.index)
+    }
+}
+impl IndexAccess {
+    pub fn parse(parser: &mut Parser, left_expr: Expression) -> Result<Self, Box<dyn ParserError>> {
+        parser.next_token();
+        let index = Expression::parse(parser, Precedence::Lowest)?;
+        if !parser.expect_peek(&Token::RBracket) {
+            // TODO: this does not belong here. Change it
+            return Err(Box::new(FuncError::new(
+                None,
+                FuncIssue::BodyIncorrectlyClosed,
+            )));
+        }
+
+        Ok(IndexAccess {
+            arr: Box::new(left_expr),
+            index: Box::new(index),
+        })
+    }
+}

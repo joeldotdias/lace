@@ -1,0 +1,19 @@
+
+let factorial = fn(n) {
+    if(n == 1) {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
+}
+
+echo("Factorial of 5 is " + factorial(5))
+
+let fibonacci = fn(x) {
+    if (x < 2) {
+        x
+    } else {
+        fibonacci(x - 1) + fibonacci(x - 2)
+    }
+};
+echo(fibonacci(20));

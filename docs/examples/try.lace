@@ -1,6 +1,6 @@
 let sentence = "May the lace code run";
 let words = split(sentence, " ");
-echo(words);
+write(words);
 
 let do_func = fn(a, b, f) {
     f(a, b);
@@ -8,4 +8,4 @@ let do_func = fn(a, b, f) {
 let sum = do_func(2, 4, fn(x, y) {
     x + y
 });
-echo("Sum is " + sum);
+write("Sum is " + sum);

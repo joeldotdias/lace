@@ -6,7 +6,6 @@ use crate::{lace_lib, Object};
 pub enum BuiltinFunction {
     Kind,
     Write,
-    Writeln,
     Read,
     Len,
     First,
@@ -33,7 +32,6 @@ impl Display for BuiltinFunction {
         let func = match self {
             BuiltinFunction::Kind => "kind",
             BuiltinFunction::Write => "write",
-            BuiltinFunction::Writeln => "writeln",
             BuiltinFunction::Read => "read",
             BuiltinFunction::Len => "len",
             BuiltinFunction::First => "first",
@@ -54,7 +52,6 @@ impl BuiltinFunction {
         match self {
             BuiltinFunction::Kind => lace_lib::std::kind(args[0].clone()),
             BuiltinFunction::Write => lace_lib::std::write(args[0].clone()),
-            BuiltinFunction::Writeln => lace_lib::std::writeln(args[0].clone()),
             BuiltinFunction::Read => lace_lib::std::read(args[0].clone()),
             BuiltinFunction::Len => lace_lib::std::len(args[0].clone()),
             BuiltinFunction::First => lace_lib::std::first(args[0].clone()),
@@ -71,7 +68,6 @@ impl BuiltinFunction {
         match self {
             BuiltinFunction::Kind
             | BuiltinFunction::Write
-            | BuiltinFunction::Writeln
             | BuiltinFunction::Read
             | BuiltinFunction::Len
             | BuiltinFunction::First => 1,
@@ -85,8 +81,7 @@ impl BuiltinFunction {
     pub fn try_builtin(name: &str) -> Option<Object> {
         let func = match name {
             "kind" => BuiltinFunction::Kind,
-            "write" => BuiltinFunction::Write,
-            "writeln" => BuiltinFunction::Writeln,
+            "writeln" => BuiltinFunction::Write,
             "read" => BuiltinFunction::Read,
             "len" => BuiltinFunction::Len,
             "first" => BuiltinFunction::First,

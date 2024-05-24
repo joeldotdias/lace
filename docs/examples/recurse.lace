@@ -7,7 +7,7 @@ let factorial = fn(n) {
     }
 }
 
-echo("Factorial of 5 is " + factorial(5))
+writeln("Factorial of 5 is " + factorial(5))
 
 let fibonacci = fn(x) {
     if (x < 2) {
@@ -16,4 +16,4 @@ let fibonacci = fn(x) {
         fibonacci(x - 1) + fibonacci(x - 2)
     }
 };
-echo(fibonacci(20));
+writeln(fibonacci(20));

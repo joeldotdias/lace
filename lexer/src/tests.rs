@@ -320,7 +320,7 @@ fn will_you_lex_more_code() {
 
 #[test]
 fn will_you_lex_from_a_file() {
-    let contents = fs::read_to_string("../examples/basic.lace").unwrap();
+    let contents = fs::read_to_string("..docs/examples/basic.lace").unwrap();
     let input = contents.as_str();
 
     let tokens = vec![

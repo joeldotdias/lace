@@ -7,11 +7,6 @@ pub fn kind(obj: Object) -> Object {
 }
 
 pub fn write(obj: Object) -> Object {
-    print!("{}", obj);
-    Object::Null
-}
-
-pub fn writeln(obj: Object) -> Object {
     println!("{}", obj);
     Object::Null
 }

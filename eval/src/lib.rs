@@ -313,8 +313,8 @@ impl Eval {
             Token::LessThanEqual => Object::Boolean(x <= y),
             Token::GreaterThanEqual => Object::Boolean(x >= y),
             _ => {
-                println!("{}", operator);
-                unreachable!("No infix")
+                // println!("{}", operator);
+                unreachable!("{}", format!("No infix for {}", operator))
             }
         }
     }

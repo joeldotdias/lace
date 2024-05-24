@@ -5,7 +5,7 @@ use std::fmt::Display;
 
 use self::{builtin::BuiltinFunction, function::Function};
 
-#[derive(Clone)]
+#[derive(PartialEq, Clone)]
 pub enum Object {
     Integer(i64),
     Float(f64),
@@ -44,14 +44,14 @@ impl Display for Object {
 impl Object {
     pub fn kind(&self) -> &str {
         match self {
-            Object::Integer(_) => "INTEGER",
-            Object::Float(_) => "FLOAT",
-            Object::Char(_) => "CHAR",
-            Object::Str(_) => "STR",
-            Object::Boolean(_) => "BOOLEAN",
-            Object::Function(_) => "FUNCTION",
-            Object::Builtin(_) => "BUILTIN",
-            Object::Array(_) => "ARRAY",
+            Object::Integer(_) => "Integer",
+            Object::Float(_) => "Float",
+            Object::Char(_) => "Character",
+            Object::Str(_) => "String",
+            Object::Boolean(_) => "Boolean",
+            Object::Function(_) => "Function",
+            Object::Builtin(_) => "Builtin Function",
+            Object::Array(_) => "Array",
             Object::Return(_) => "RETURN",
             Object::Null => "NULL",
             Object::Error(_) => "ERROR",

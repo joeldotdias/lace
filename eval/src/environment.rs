@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 use crate::object::Object;
 
-#[derive(Clone)]
+#[derive(PartialEq, Clone)]
 pub struct Environment {
     store: HashMap<String, Object>,
     outer_env: Option<Rc<RefCell<Environment>>>,

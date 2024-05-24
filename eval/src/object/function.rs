@@ -4,7 +4,7 @@ use lace_parser::ast::{nodes::IdentNode, statement::BlockStatement};
 
 use crate::environment::Environment;
 
-#[derive(Clone)]
+#[derive(PartialEq, Clone)]
 pub struct Function {
     pub params: Vec<IdentNode>,
     pub body: BlockStatement,

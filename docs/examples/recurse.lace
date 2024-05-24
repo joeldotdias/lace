@@ -7,7 +7,7 @@ let factorial = fn(n) {
     }
 }
 
-writeln("Factorial of 5 is " + factorial(5))
+write("Factorial of 5 is " + factorial(5))
 
 let fibonacci = fn(x) {
     if (x < 2) {
@@ -16,4 +16,4 @@ let fibonacci = fn(x) {
         fibonacci(x - 1) + fibonacci(x - 2)
     }
 };
-writeln(fibonacci(20));
+write(fibonacci(20));

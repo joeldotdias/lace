@@ -150,3 +150,23 @@ pub fn first(obj: Object) -> Object {
         )),
     }
 }
+
+pub fn last(obj: Object) -> Object {
+    match obj {
+        Object::Str(s) => match s.chars().last() {
+            Some(ch) => Object::Char(ch),
+            None => Object::Null,
+        },
+        Object::Array(a) => {
+            let arr_len = a.len();
+            if arr_len == 0 {
+                return Object::Error("Array is empty".into());
+            }
+            a[arr_len - 1].clone()
+        }
+        _ => Object::Error(format!(
+            "{} does not have any associated function last()",
+            obj.kind()
+        )),
+    }
+}

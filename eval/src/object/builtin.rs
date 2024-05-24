@@ -9,7 +9,9 @@ pub enum BuiltinFunction {
     Read,
     Len,
     First,
+    Last,
     Split,
+    Chars,
     Append,
     StripStart,
     StripEnd,
@@ -35,7 +37,9 @@ impl Display for BuiltinFunction {
             BuiltinFunction::Read => "read",
             BuiltinFunction::Len => "len",
             BuiltinFunction::First => "first",
+            BuiltinFunction::Last => "last",
             BuiltinFunction::Split => "split",
+            BuiltinFunction::Chars => "chars",
             BuiltinFunction::Append => "append",
             BuiltinFunction::StripStart => "strip_start",
             BuiltinFunction::StripEnd => "strip_end",
@@ -55,7 +59,9 @@ impl BuiltinFunction {
             BuiltinFunction::Read => lace_lib::std::read(args[0].clone()),
             BuiltinFunction::Len => lace_lib::std::len(args[0].clone()),
             BuiltinFunction::First => lace_lib::std::first(args[0].clone()),
+            BuiltinFunction::Last => lace_lib::std::last(args[0].clone()),
             BuiltinFunction::Split => lace_lib::str::split(args[0].clone(), args[1].clone()),
+            BuiltinFunction::Chars => lace_lib::str::chars(args[0].clone()),
             BuiltinFunction::Append => lace_lib::array::append(args[0].clone(), args[1].clone()),
             BuiltinFunction::StripStart => {
                 lace_lib::std::strip_start(args[0].clone(), args[1].clone())
@@ -70,7 +76,9 @@ impl BuiltinFunction {
             | BuiltinFunction::Write
             | BuiltinFunction::Read
             | BuiltinFunction::Len
-            | BuiltinFunction::First => 1,
+            | BuiltinFunction::First
+            | BuiltinFunction::Last
+            | BuiltinFunction::Chars => 1,
             BuiltinFunction::Split
             | BuiltinFunction::Append
             | BuiltinFunction::StripStart
@@ -85,6 +93,8 @@ impl BuiltinFunction {
             "read" => BuiltinFunction::Read,
             "len" => BuiltinFunction::Len,
             "first" => BuiltinFunction::First,
+            "last" => BuiltinFunction::Last,
+            "chars" => BuiltinFunction::Chars,
             "split" => BuiltinFunction::Split,
             "append" => BuiltinFunction::Append,
             "strip_start" => BuiltinFunction::StripStart,

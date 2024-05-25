@@ -61,6 +61,8 @@ pub enum Token {
     Comma,
     /// ;
     Semicolon,
+    /// :
+    Colon,
     /// (
     LParen,
     /// )
@@ -124,6 +126,7 @@ impl Display for Token {
             Token::And => write!(f, "And"),
             Token::Dot => write!(f, "Dot"),
             Token::Comma => write!(f, "Comma"),
+            Token::Colon => write!(f, "Colon"),
             Token::Semicolon => write!(f, "Semicolon"),
             Token::LParen => write!(f, "Lparen"),
             Token::RParen => write!(f, "Rparen"),

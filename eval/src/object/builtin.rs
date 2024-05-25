@@ -89,7 +89,7 @@ impl BuiltinFunction {
     pub fn try_builtin(name: &str) -> Option<Object> {
         let func = match name {
             "kind" => BuiltinFunction::Kind,
-            "writeln" => BuiltinFunction::Write,
+            "write" => BuiltinFunction::Write,
             "read" => BuiltinFunction::Read,
             "len" => BuiltinFunction::Len,
             "first" => BuiltinFunction::First,

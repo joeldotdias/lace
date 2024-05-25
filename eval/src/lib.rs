@@ -2,12 +2,12 @@ pub mod environment;
 pub mod lace_lib;
 pub mod object;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{environment::Environment, object::Object};
 use lace_lexer::token::Token;
 use lace_parser::ast::{
-    nodes::{ConditionalOperator, IdentNode, IndexAccess, PrimitiveNode},
+    nodes::{ConditionalOperator, HashLiteral, IdentNode, IndexAccess, PrimitiveNode},
     statement::{BlockStatement, Statement},
     Expression, Program,
 };
@@ -126,6 +126,7 @@ impl Eval {
                 }
             }
             Expression::ArrIndex(index_access) => self.eval_index_expr(index_access),
+            Expression::HashMapLiteral(hmap) => self.eval_hashmap_expr(hmap),
         }
     }
 
@@ -170,10 +171,37 @@ impl Eval {
         env
     }
 
+    fn eval_hashmap_expr(&mut self, h_pairs: HashLiteral) -> Object {
+        let mut hmap = HashMap::new();
+
+        for (key, val) in h_pairs.pairs {
+            let key = self.eval_expression(key);
+            if key.errored() {
+                return key;
+            }
+
+            if !matches!(
+                key,
+                Object::Integer(_) | Object::Char(_) | Object::Str(_) | Object::Boolean(_)
+            ) {
+                return Object::Error(format!("Cannot hash a {}", key.kind()));
+            }
+
+            let val = self.eval_expression(val);
+            if val.errored() {
+                return val;
+            }
+
+            hmap.insert(key, val);
+        }
+
+        Object::HashLiteral(hmap)
+    }
+
     fn eval_index_expr(&mut self, index_expr: IndexAccess) -> Object {
-        let arr = self.eval_expression(*index_expr.arr);
-        if arr.errored() {
-            return arr;
+        let collection = self.eval_expression(*index_expr.arr);
+        if collection.errored() {
+            return collection;
         }
 
         let index = self.eval_expression(*index_expr.index);
@@ -181,20 +209,28 @@ impl Eval {
             return index;
         }
 
-        match (arr, index) {
+        match (&collection, &index) {
             (Object::Array(a), Object::Integer(i)) => {
                 let l = a.len();
-                if i < 0 {
+                if *i < 0 {
                     return Object::Error("Negative indexing isn't valid".into());
-                } else if i >= l as i64 {
+                } else if *i >= l as i64 {
                     return Object::Error(format!(
                         "Index {} out of bounds for an array of length {}",
                         i, l
                     ));
                 }
-                a[i as usize].clone()
+                a[*i as usize].clone()
             }
-            _ => todo!(),
+            (Object::HashLiteral(h), _) => match h.get(&index) {
+                Some(h) => h.clone(),
+                None => Object::Null,
+            },
+            _ => Object::Error(format!(
+                "Did not find value {} for {}",
+                collection.kind(),
+                index.kind()
+            )),
         }
     }
 

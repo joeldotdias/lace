@@ -14,12 +14,17 @@ pub fn write(obj: Object) -> Object {
 pub fn read(obj: Object) -> Object {
     io::stdout().flush().unwrap();
     let mut buffer = String::new();
-    if let Err(_) = io::stdin().read_line(&mut buffer) {
+    if io::stdin().read_line(&mut buffer).is_err() {
         return Object::Error("Failed to read from stdin".into());
     };
 
     match obj {
-        Object::Integer(_) => Object::Integer(buffer.parse::<i64>().expect("Expected an integer")),
+        Object::Integer(_) => Object::Integer(
+            buffer
+                .trim_end()
+                .parse::<i64>()
+                .expect("Expected an integer"),
+        ),
         Object::Float(_) => Object::Float(
             buffer
                 .parse::<f64>()
@@ -27,7 +32,7 @@ pub fn read(obj: Object) -> Object {
         ),
         Object::Char(_) => {
             if let 1 = buffer.len() {
-                Object::Char(buffer.chars().nth(0).unwrap())
+                Object::Char(buffer.chars().next().unwrap())
             } else {
                 Object::Error("More than one characters received".into())
             }
@@ -71,7 +76,7 @@ pub fn strip_start(obj: Object, strip: Object) -> Object {
         Object::Array(arr) => match strip {
             Object::Array(stripable) => {
                 let strip_len = stripable.len();
-                let mdf = if &arr[..strip_len] == &stripable {
+                let mdf = if arr[..strip_len] == stripable {
                     &arr[strip_len..]
                 } else {
                     &arr
@@ -112,7 +117,7 @@ pub fn strip_end(obj: Object, strip: Object) -> Object {
             Object::Array(stripable) => {
                 let strip_len = stripable.len();
                 let arr_len = arr.len();
-                let mdf = if &arr[(arr_len - strip_len)..] == &stripable {
+                let mdf = if arr[(arr_len - strip_len)..] == stripable {
                     &arr[..(arr.len() - strip_len)]
                 } else {
                     &arr
@@ -134,12 +139,12 @@ pub fn strip_end(obj: Object, strip: Object) -> Object {
 
 pub fn first(obj: Object) -> Object {
     match obj {
-        Object::Str(s) => match s.chars().nth(0) {
+        Object::Str(s) => match s.chars().next() {
             Some(ch) => Object::Char(ch),
             None => Object::Null,
         },
         Object::Array(a) => {
-            if a.len() == 0 {
+            if a.is_empty() {
                 return Object::Error("Array is empty".into());
             }
             a[0].clone()

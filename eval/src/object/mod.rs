@@ -1,7 +1,7 @@
 pub mod builtin;
 pub mod function;
 
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display, hash::Hash};
 
 use self::{builtin::BuiltinFunction, function::Function};
 
@@ -15,6 +15,7 @@ pub enum Object {
     Function(Function),
     Builtin(BuiltinFunction),
     Array(Vec<Object>),
+    HashLiteral(HashMap<Object, Object>),
     Return(Box<Object>),
     Null,
     Error(String),
@@ -34,6 +35,13 @@ impl Display for Object {
                 let elements = arr.iter().map(ToString::to_string).collect::<Vec<String>>();
                 write!(f, "[{}]", elements.join(", "))
             }
+            Object::HashLiteral(hmap) => {
+                let pairs = hmap
+                    .iter()
+                    .map(|(key, val)| format!("{}: {}", key, val))
+                    .collect::<Vec<String>>();
+                write!(f, "{{ {} }}", pairs.join(", "))
+            }
             Object::Return(obj) => write!(f, "{}", obj),
             Object::Null => write!(f, "NULL"),
             Object::Error(err) => write!(f, "Err => {}", err),
@@ -52,6 +60,7 @@ impl Object {
             Object::Function(_) => "Function",
             Object::Builtin(_) => "Builtin Function",
             Object::Array(_) => "Array",
+            Object::HashLiteral(_) => "HashMap",
             Object::Return(_) => "RETURN",
             Object::Null => "NULL",
             Object::Error(_) => "ERROR",
@@ -60,5 +69,19 @@ impl Object {
 
     pub fn errored(&self) -> bool {
         matches!(self, Object::Error(_))
+    }
+}
+
+impl Eq for Object {}
+
+impl Hash for Object {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Object::Integer(i) => i.hash(state),
+            Object::Char(ch) => ch.hash(state),
+            Object::Str(s) => s.hash(state),
+            Object::Boolean(b) => b.hash(state),
+            _ => "".hash(state),
+        }
     }
 }

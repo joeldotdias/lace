@@ -1,4 +1,3 @@
-
 let factorial = fn(n) {
     if(n == 1) {
         1

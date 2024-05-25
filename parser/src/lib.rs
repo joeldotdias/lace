@@ -63,7 +63,9 @@ impl Parser {
     }
 
     pub fn parse_let(&mut self) -> Option<LetStatement> {
-        if !self.expect_peek(&Token::Ident { label: String::new() }) {
+        if !self.expect_peek(&Token::Ident {
+            label: String::new(),
+        }) {
             return None;
         }
 
@@ -82,9 +84,7 @@ impl Parser {
         self.next_token();
 
         let mut val = match Expression::parse(self, Precedence::Lowest) {
-            Ok(val) => {
-                val
-            }
+            Ok(val) => val,
             Err(err) => {
                 self.found_err(err);
                 return None;

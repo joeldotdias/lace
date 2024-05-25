@@ -14,7 +14,7 @@ use crate::{
     Parser, Token,
 };
 
-use self::nodes::{ArrayLiteral, IndexAccess};
+use self::nodes::{ArrayLiteral, HashLiteral, IndexAccess};
 
 #[derive(Default)]
 pub struct Program {
@@ -44,6 +44,7 @@ pub enum Expression {
     FunctionCall(FunctionCall),
     Array(ArrayLiteral),
     ArrIndex(IndexAccess),
+    HashMapLiteral(HashLiteral),
 }
 
 impl Display for Expression {
@@ -58,6 +59,7 @@ impl Display for Expression {
             Expression::FunctionCall(x) => write!(f, "{x}"),
             Expression::Array(x) => write!(f, "{}", x),
             Expression::ArrIndex(x) => write!(f, "{}", x),
+            Expression::HashMapLiteral(x) => write!(f, "{}", x),
         }
     }
 }
@@ -77,6 +79,7 @@ impl Expression {
             Token::If => ConditionalOperator::parse(parser).map(Expression::Conditional),
             Token::Function => FunctionLiteral::parse(parser).map(Expression::FunctionDef),
             Token::LBracket => ArrayLiteral::parse(parser).map(Expression::Array),
+            Token::LCurly => HashLiteral::parse(parser).map(Expression::HashMapLiteral),
             _ => return Err(Box::new(NoPrefixParser::from(parser.curr_token.clone()))),
         }?;
 

@@ -24,7 +24,7 @@ pub fn split(obj: Object, delimeter: Object) -> Object {
 
 pub fn chars(obj: Object) -> Object {
     if let Object::Str(s) = obj {
-        let chs = s.chars().map(|ch| Object::Char(ch)).collect();
+        let chs = s.chars().map(Object::Char).collect();
         Object::Array(chs)
     } else {
         Object::Error(format!(

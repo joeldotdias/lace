@@ -417,3 +417,60 @@ impl IndexAccess {
         })
     }
 }
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct HashLiteral {
+    pub pairs: Vec<(Expression, Expression)>,
+}
+
+impl Display for HashLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let pairs = self
+            .pairs
+            .iter()
+            .map(|(key, val)| format!("{}: {}", key, val))
+            .collect::<Vec<String>>();
+
+        write!(f, "{{ {} }}", pairs.join(","))
+    }
+}
+
+impl HashLiteral {
+    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+        let mut pairs = Vec::new();
+
+        while !parser.peek_token_is(&Token::RCurly) {
+            parser.next_token();
+            let key = Expression::parse(parser, Precedence::Lowest)?;
+            if !parser.expect_peek(&Token::Colon) {
+                // TODO: this does not belong here. Change it
+                return Err(Box::new(FuncError::new(
+                    None,
+                    FuncIssue::BodyIncorrectlyClosed,
+                )));
+            }
+
+            parser.next_token();
+            let val = Expression::parse(parser, Precedence::Lowest)?;
+
+            pairs.push((key, val));
+
+            if !parser.peek_token_is(&Token::RCurly) && !parser.expect_peek(&Token::Comma) {
+                // TODO: this does not belong here. Change it
+                return Err(Box::new(FuncError::new(
+                    None,
+                    FuncIssue::BodyIncorrectlyClosed,
+                )));
+            }
+        }
+
+        if !parser.expect_peek(&Token::RCurly) {
+            return Err(Box::new(FuncError::new(
+                None,
+                FuncIssue::BodyIncorrectlyClosed,
+            )));
+        }
+
+        Ok(HashLiteral { pairs })
+    }
+}

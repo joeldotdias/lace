@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, path::PathBuf};
 
 use lace_lexer::token::Token;
 
@@ -9,17 +9,19 @@ use crate::{
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Statement {
-    Let(LetStatement),
+    Assignment(LetStatement),
     Return(ReturnStatement),
     Expr(Expression),
+    Source(SourceStatement),
 }
 
 impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Statement::Let(statement) => write!(f, "{}", statement),
+            Statement::Assignment(statement) => write!(f, "{}", statement),
             Statement::Return(statement) => write!(f, "{}", statement),
             Statement::Expr(expression) => write!(f, "{}", expression),
+            Statement::Source(source) => write!(f, "{}", source),
         }
     }
 }
@@ -77,5 +79,16 @@ impl BlockStatement {
         }
 
         BlockStatement { statements: block }
+    }
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct SourceStatement {
+    pub path: PathBuf,
+}
+
+impl Display for SourceStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", format!("Source {}", self.path.to_str().unwrap()))
     }
 }

@@ -102,20 +102,20 @@ impl PrimitiveNode {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct PrefixOperator {
-    pub token: Token,
+    pub operator: Token,
     pub right_expr: Box<Expression>,
 }
 
 impl Display for PrefixOperator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Prefix({}){}", self.token, self.right_expr)
+        write!(f, "Prefix({}){}", self.operator, self.right_expr)
     }
 }
 
 impl PrefixOperator {
     pub fn new(token: Token, right: Expression) -> Self {
         Self {
-            token,
+            operator: token,
             right_expr: Box::new(right),
         }
     }
@@ -131,7 +131,7 @@ impl PrefixOperator {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct InfixOperator {
-    pub token: Token,
+    pub operator: Token,
     pub left_expr: Box<Expression>,
     pub right_expr: Box<Expression>,
 }
@@ -141,7 +141,7 @@ impl Display for InfixOperator {
         write!(
             f,
             "{} Infix({}) {}",
-            self.left_expr, self.token, self.right_expr
+            self.left_expr, self.operator, self.right_expr
         )
     }
 }
@@ -149,7 +149,7 @@ impl Display for InfixOperator {
 impl InfixOperator {
     pub fn new(token: Token, left_expr: Expression, right_expr: Expression) -> Self {
         Self {
-            token,
+            operator: token,
             left_expr: Box::new(left_expr),
             right_expr: Box::new(right_expr),
         }

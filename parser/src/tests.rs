@@ -1,9 +1,11 @@
+use std::path::PathBuf;
+
 use lace_lexer::{token::Token, Lexer};
 
 use crate::{
     ast::{
         nodes::{IdentNode, PrimitiveNode},
-        statement::{LetStatement, Statement},
+        statement::{LetStatement, SourceStatement, Statement},
         Expression,
     },
     Parser,
@@ -44,34 +46,40 @@ fn will_you_parse_let() {
     "#;
 
     let expected_statemets = vec![
-        Statement::Let(LetStatement {
+        Statement::Assignment(LetStatement {
             name: IdentNode {
                 token: Token::Ident { label: "x".into() },
                 label: "x".to_string(),
             },
             val: Expression::Primitive(PrimitiveNode::IntegerLiteral(5)),
         }),
-        Statement::Let(LetStatement {
+        Statement::Assignment(LetStatement {
             name: IdentNode {
                 token: Token::Ident { label: "y".into() },
                 label: "y".to_string(),
             },
             val: Expression::Primitive(PrimitiveNode::IntegerLiteral(10)),
         }),
-        Statement::Let(LetStatement {
+        Statement::Assignment(LetStatement {
             name: IdentNode {
-                token: Token::Ident { label: "flag".to_string() },
+                token: Token::Ident {
+                    label: "flag".to_string(),
+                },
                 label: "flag".to_string(),
             },
             val: Expression::Primitive(PrimitiveNode::BooleanLiteral(false)),
         }),
-        Statement::Let(LetStatement {
+        Statement::Assignment(LetStatement {
             name: IdentNode {
-                token: Token::Ident { label: "foobar".to_string() },
+                token: Token::Ident {
+                    label: "foobar".to_string(),
+                },
                 label: "foobar".to_string(),
             },
             val: Expression::Identifier(IdentNode {
-                token: Token::Ident { label: "y".to_string() },
+                token: Token::Ident {
+                    label: "y".to_string(),
+                },
                 label: "y".to_string(),
             }),
         }),
@@ -94,4 +102,34 @@ fn will_you_oopsie_let() {
 
     parser.log_errors();
     assert_ne!(parser.errors.len(), 0);
+}
+
+#[test]
+fn will_you_parse_source() {
+    let input = r#"
+        let x = 5;
+        source "path/to/source";
+        let y = 10;
+    "#;
+    let expected_statemets = vec![
+        Statement::Assignment(LetStatement {
+            name: IdentNode {
+                token: Token::Ident { label: "x".into() },
+                label: "x".to_string(),
+            },
+            val: Expression::Primitive(PrimitiveNode::IntegerLiteral(5)),
+        }),
+        Statement::Source(SourceStatement {
+            path: PathBuf::from("path/to/source"),
+        }),
+        Statement::Assignment(LetStatement {
+            name: IdentNode {
+                token: Token::Ident { label: "y".into() },
+                label: "y".to_string(),
+            },
+            val: Expression::Primitive(PrimitiveNode::IntegerLiteral(10)),
+        }),
+    ];
+
+    validate_parser(input, expected_statemets)
 }

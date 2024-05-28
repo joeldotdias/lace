@@ -2,14 +2,17 @@ pub mod environment;
 pub mod lace_lib;
 pub mod object;
 
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fs, rc::Rc};
 
 use crate::{environment::Environment, object::Object};
-use lace_lexer::token::Token;
-use lace_parser::ast::{
-    nodes::{ConditionalOperator, HashLiteral, IdentNode, IndexAccess, PrimitiveNode},
-    statement::{BlockStatement, Statement},
-    Expression, Program,
+use lace_lexer::{token::Token, Lexer};
+use lace_parser::{
+    ast::{
+        nodes::{ConditionalOperator, HashLiteral, IdentNode, IndexAccess, PrimitiveNode},
+        statement::{BlockStatement, Statement},
+        Expression, Program,
+    },
+    Parser,
 };
 use object::{builtin::BuiltinFunction, function::Function};
 
@@ -57,7 +60,7 @@ impl Eval {
 
     fn eval_statement(&mut self, statement: Statement) -> Object {
         match statement {
-            Statement::Let(st) => {
+            Statement::Assignment(st) => {
                 let val = self.eval_expression(st.val);
                 if val.errored() {
                     return val;
@@ -74,6 +77,28 @@ impl Eval {
                 }
             }
             Statement::Expr(expr) => self.eval_expression(expr),
+            Statement::Source(sourceable) => {
+                let code = match fs::read_to_string(&sourceable.path) {
+                    Ok(code) => code,
+                    Err(_) => {
+                        return Object::Error(format!(
+                            "Failed to open {}",
+                            &sourceable.path.to_str().unwrap()
+                        ));
+                    }
+                };
+
+                let lexer = Lexer::new(code);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program();
+                if !parser.errors.is_empty() {
+                    parser.errors.iter().for_each(|e| {
+                        println!("{}", e.log_err());
+                    })
+                }
+                let mut evaluator = Eval::new();
+                evaluator.eval(program)
+            }
         }
     }
 
@@ -81,17 +106,17 @@ impl Eval {
         match expression {
             Expression::Identifier(ident) => self.eval_ident(ident),
             Expression::Primitive(primitive) => Self::eval_primitive(primitive),
-            Expression::Prefix(prefix) => {
+            Expression::Unary(prefix) => {
                 let right = self.eval_expression(*prefix.right_expr);
-                Self::eval_prefix(&prefix.token, &right)
+                Self::eval_prefix(&prefix.operator, &right)
             }
-            Expression::Infix(infix) => {
+            Expression::Binary(infix) => {
                 let (left, right) = (
                     self.eval_expression(*infix.left_expr),
                     self.eval_expression(*infix.right_expr),
                 );
 
-                Self::eval_infix(&infix.token, left, right)
+                Self::eval_infix(&infix.operator, left, right)
             }
             Expression::Conditional(conditional) => self.eval_conditional(conditional),
             Expression::FunctionDef(func) => {
@@ -349,7 +374,6 @@ impl Eval {
             Token::LessThanEqual => Object::Boolean(x <= y),
             Token::GreaterThanEqual => Object::Boolean(x >= y),
             _ => {
-                // println!("{}", operator);
                 unreachable!("{}", format!("No infix for {}", operator))
             }
         }

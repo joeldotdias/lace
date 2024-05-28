@@ -108,17 +108,11 @@ impl Lexer {
                 }
             }
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
-                let ident = self.read_ident();
+                let label = self.read_ident();
 
-                return match ident.as_str() {
-                    "fn" => Token::Function,
-                    "let" => Token::Let,
-                    "if" => Token::If,
-                    "else" => Token::Else,
-                    "true" => Token::True,
-                    "false" => Token::False,
-                    "return" => Token::Return,
-                    _ => Token::Ident { label: ident },
+                return match Token::try_keyword(&label) {
+                    Some(keyword) => keyword,
+                    None => Token::Ident { label },
                 };
             }
             b'0'..=b'9' => {

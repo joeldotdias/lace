@@ -1,9 +1,11 @@
+use std::path::PathBuf;
+
 use errors::{BadExpectations, ParserError};
 use lace_lexer::{token::Token, Lexer};
 
 use crate::ast::{
     nodes::IdentNode,
-    statement::{LetStatement, ReturnStatement, Statement},
+    statement::{LetStatement, ReturnStatement, SourceStatement, Statement},
     Expression, Precedence, Program,
 };
 
@@ -56,8 +58,9 @@ impl Parser {
 
     pub fn parse_statement(&mut self) -> Option<Statement> {
         match self.curr_token {
-            Token::Let => self.parse_let().map(Statement::Let),
+            Token::Let => self.parse_let().map(Statement::Assignment),
             Token::Return => self.parse_return().map(Statement::Return),
+            Token::Source => self.parse_source().map(Statement::Source),
             _ => self.parse_expression().map(Statement::Expr),
         }
     }
@@ -120,6 +123,35 @@ impl Parser {
         Some(ReturnStatement {
             returnable: return_val,
         })
+    }
+
+    fn parse_source(&mut self) -> Option<SourceStatement> {
+        self.next_token();
+
+        let sourceable = match Expression::parse(self, Precedence::Lowest) {
+            Ok(e) => match e {
+                Expression::Primitive(p) => match p {
+                    ast::nodes::PrimitiveNode::IntegerLiteral(_) => todo!(),
+                    ast::nodes::PrimitiveNode::FloatLiteral(_) => todo!(),
+                    ast::nodes::PrimitiveNode::CharLiteral(_) => todo!(),
+                    ast::nodes::PrimitiveNode::StringLiteral(s) => s,
+                    ast::nodes::PrimitiveNode::BooleanLiteral(_) => todo!(),
+                },
+                _ => todo!(),
+            },
+            Err(err) => {
+                self.found_err(err);
+                return None;
+            }
+        };
+
+        if self.peek_token_is(&Token::Semicolon) {
+            self.next_token();
+        }
+
+        let path = PathBuf::from(&sourceable);
+
+        Some(SourceStatement { path })
     }
 
     fn parse_expression(&mut self) -> Option<Expression> {

@@ -23,7 +23,6 @@ pub fn run_interpreter(source: PathBuf) -> Result<(), String> {
     if parser.errors.is_empty() {
         let mut evaluator = Eval::new();
         evaluator.eval(program);
-        // println!();
     } else {
         parser.errors.iter().for_each(|e| {
             println!("{}", e.log_err());

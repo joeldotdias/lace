@@ -84,6 +84,7 @@ pub enum Token {
     Else,
     True,
     False,
+    Source,
 
     // Comments
     /// //
@@ -136,6 +137,7 @@ impl Display for Token {
             Token::RBracket => write!(f, "RBracket"),
             Token::Let => write!(f, "Let"),
             Token::Function => write!(f, "Function"),
+            Token::Source => write!(f, "Source"),
             Token::Return => write!(f, "Return"),
             Token::If => write!(f, "If"),
             Token::Else => write!(f, "Else"),
@@ -155,6 +157,22 @@ impl Display for Token {
 impl Token {
     pub fn reached_eof(&self) -> bool {
         *self == Token::Eof
+    }
+
+    pub fn try_keyword(label: &str) -> Option<Token> {
+        let keyword = match label {
+            "fn" => Token::Function,
+            "let" => Token::Let,
+            "if" => Token::If,
+            "else" => Token::Else,
+            "true" => Token::True,
+            "false" => Token::False,
+            "return" => Token::Return,
+            "source" => Token::Source,
+            _ => return None,
+        };
+
+        Some(keyword)
     }
 }
 

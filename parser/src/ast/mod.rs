@@ -37,8 +37,8 @@ impl Display for Program {
 pub enum Expression {
     Identifier(IdentNode),
     Primitive(PrimitiveNode),
-    Prefix(PrefixOperator),
-    Infix(InfixOperator),
+    Unary(PrefixOperator),
+    Binary(InfixOperator),
     Conditional(ConditionalOperator),
     FunctionDef(FunctionLiteral),
     FunctionCall(FunctionCall),
@@ -52,8 +52,8 @@ impl Display for Expression {
         match self {
             Expression::Identifier(x) => write!(f, "{x}"),
             Expression::Primitive(x) => write!(f, "{x}"),
-            Expression::Prefix(x) => write!(f, "{x}"),
-            Expression::Infix(x) => write!(f, "{x}"),
+            Expression::Unary(x) => write!(f, "{x}"),
+            Expression::Binary(x) => write!(f, "{x}"),
             Expression::Conditional(x) => write!(f, "{x}"),
             Expression::FunctionDef(x) => write!(f, "{x}"),
             Expression::FunctionCall(x) => write!(f, "{x}"),
@@ -74,7 +74,7 @@ impl Expression {
             Token::Literal { kind: _, val: _ } | Token::False | Token::True => {
                 PrimitiveNode::parse(parser).map(Expression::Primitive)
             }
-            Token::Bang | Token::Minus => PrefixOperator::parse(parser).map(Expression::Prefix),
+            Token::Bang | Token::Minus => PrefixOperator::parse(parser).map(Expression::Unary),
             Token::LParen => Self::parse_grouped_expr(parser),
             Token::If => ConditionalOperator::parse(parser).map(Expression::Conditional),
             Token::Function => FunctionLiteral::parse(parser).map(Expression::FunctionDef),
@@ -99,7 +99,7 @@ impl Expression {
                 | Token::Or
                 | Token::Modulo => {
                     parser.next_token();
-                    left_expr = Expression::Infix(InfixOperator::parse(parser, left_expr)?);
+                    left_expr = Expression::Binary(InfixOperator::parse(parser, left_expr)?);
                 }
 
                 Token::LParen => {
@@ -162,9 +162,9 @@ impl Expression {
 pub enum Precedence {
     Lowest = 0,
     Equality = 1,
-    LessOrGreaterThan = 2,
-    Sum = 3,
-    Product = 4,
+    Comparative = 2,
+    Additive = 3,
+    Multiplicative = 4,
     Prefix = 5,
     FnCall = 6,
     Index = 7,
@@ -178,9 +178,9 @@ impl From<&Token> for Precedence {
             | Token::LessThanEqual
             | Token::GreaterThan
             | Token::GreaterThanEqual => Precedence::Index,
-            Token::Plus | Token::Minus | Token::Or => Precedence::Sum,
+            Token::Plus | Token::Minus | Token::Or => Precedence::Additive,
             Token::ForwardSlash | Token::Asterisk | Token::Modulo | Token::And => {
-                Precedence::Product
+                Precedence::Multiplicative
             }
             Token::LParen => Precedence::FnCall,
             Token::LBracket => Precedence::Index,

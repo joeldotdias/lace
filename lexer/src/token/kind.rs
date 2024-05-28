@@ -108,7 +108,7 @@ pub enum TokenKind {
 impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TokenKind::Ident { label } => write!(f, "Ident({})", label),
+            TokenKind::Ident { label } => write!(f, "Ident({label})"),
             TokenKind::Literal { kind, val } => write!(f, "{} Literal({})", kind, val),
             TokenKind::Assign => write!(f, "Assign"),
             TokenKind::Bang => write!(f, "Bang"),
@@ -149,7 +149,7 @@ impl Display for TokenKind {
                 terminated: _,
             } => write!(f, "BlockComment {}", content),
             TokenKind::Eof => write!(f, "Eof"),
-            TokenKind::Illegal => write!(f, "Illegal"),
+            TokenKind::Illegal => write!(f, "Label"),
         }
     }
 }

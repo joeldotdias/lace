@@ -12,7 +12,7 @@ use token::{
 /// Iterator over the code
 /// Acts as a cursor over the input
 pub struct Lexer {
-    /// input from the user as an array of bytes
+    /// input from the user as a vector of bytes
     input: Vec<u8>,
     /// points to the current position
     position: usize,
@@ -47,7 +47,7 @@ impl Lexer {
     }
 
     pub fn make_span(&self, start_pos: usize) -> Span {
-        let end_pos = self.read_position;
+        let end_pos = self.position;
 
         let start_line = match self
             .line_breaks
@@ -70,10 +70,10 @@ impl Lexer {
         };
 
         Span {
-            start_row: start_line,
-            end_row: end_line,
-            start_col: start_pos,
-            end_col: end_pos,
+            start_line,
+            end_line,
+            start_col: start_pos - self.line_breaks[start_line - 1],
+            end_col: end_pos - self.line_breaks[end_line - 1],
         }
     }
 
@@ -178,7 +178,7 @@ impl Lexer {
 
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
-        let start = self.read_position;
+        let start = self.position;
 
         let kind = self.token_kind();
 

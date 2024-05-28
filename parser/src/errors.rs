@@ -21,7 +21,10 @@ impl From<Token> for NoPrefixParser {
 
 impl ParserError for NoPrefixParser {
     fn log_err(&self) -> String {
-        format!("No prefix parser found for {}", self.token)
+        format!(
+            "At {}:{} => No prefix parser found for {}",
+            self.token.span.start_line, self.token.span.start_col, self.token.kind
+        )
     }
 }
 
@@ -194,7 +197,6 @@ impl ParserError for UnterminatedLiteral {
         }
     }
 }
-
 
 pub struct BadExpectations {
     expected: Token,

@@ -99,8 +99,7 @@ impl Eval {
                         println!("{}", e.log_err());
                     })
                 }
-                let mut evaluator = Eval::new();
-                evaluator.eval(program)
+                self.eval(program)
             }
         }
     }

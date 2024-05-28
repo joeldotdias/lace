@@ -1,14 +1,20 @@
 use std::fs;
 
-use super::{Lexer, LiteralKind, Token};
+use crate::{
+    token::kind::{LiteralKind, TokenKind},
+    Lexer,
+};
 
-fn validate_tokens(input: &str, tokens: Vec<Token>) {
+fn validate_tokens(input: &str, tokens: Vec<TokenKind>) {
     let mut lexer = Lexer::new(input.into());
 
-    for token in tokens {
-        let next_token = lexer.next_token();
-        println!("expected: {:?}, received {:?}", token, next_token);
-        assert_eq!(token, next_token);
+    for expected_token_kind in tokens {
+        let received_token = lexer.next_token();
+        println!(
+            "expected: {}, received {}",
+            expected_token_kind, received_token
+        );
+        assert_eq!(expected_token_kind, received_token.kind);
     }
 }
 
@@ -17,16 +23,16 @@ fn will_you_lex() {
     let input = "=+(.){},;%";
 
     let tokens = vec![
-        Token::Assign,
-        Token::Plus,
-        Token::LParen,
-        Token::Dot,
-        Token::RParen,
-        Token::LCurly,
-        Token::RCurly,
-        Token::Comma,
-        Token::Semicolon,
-        Token::Modulo,
+        TokenKind::Assign,
+        TokenKind::Plus,
+        TokenKind::LParen,
+        TokenKind::Dot,
+        TokenKind::RParen,
+        TokenKind::LCurly,
+        TokenKind::RCurly,
+        TokenKind::Comma,
+        TokenKind::Semicolon,
+        TokenKind::Modulo,
     ];
 
     validate_tokens(input, tokens)
@@ -50,108 +56,108 @@ fn will_you_lex_some_code() {
         "#;
 
     let tokens = vec![
-        Token::Let,
-        Token::Ident {
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "five".into(),
         },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("5"),
         },
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "ten".into(),
         },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("10"),
         },
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "add".into(),
         },
-        Token::Assign,
-        Token::Function,
-        Token::LParen,
-        Token::Ident { label: "x".into() },
-        Token::Comma,
-        Token::Ident { label: "y".into() },
-        Token::RParen,
-        Token::LCurly,
-        Token::Ident { label: "x".into() },
-        Token::Plus,
-        Token::Ident { label: "y".into() },
-        Token::RCurly,
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::Assign,
+        TokenKind::Function,
+        TokenKind::LParen,
+        TokenKind::Ident { label: "x".into() },
+        TokenKind::Comma,
+        TokenKind::Ident { label: "y".into() },
+        TokenKind::RParen,
+        TokenKind::LCurly,
+        TokenKind::Ident { label: "x".into() },
+        TokenKind::Plus,
+        TokenKind::Ident { label: "y".into() },
+        TokenKind::RCurly,
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "result".into(),
         },
-        Token::Assign,
-        Token::Ident {
+        TokenKind::Assign,
+        TokenKind::Ident {
             label: "add".into(),
         },
-        Token::LParen,
-        Token::Ident {
+        TokenKind::LParen,
+        TokenKind::Ident {
             label: "five".into(),
         },
-        Token::Comma,
-        Token::Ident {
+        TokenKind::Comma,
+        TokenKind::Ident {
             label: "ten".into(),
         },
-        Token::RParen,
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::RParen,
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "greet".into(),
         },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Str { terminated: true },
             val: String::from("Hi, my age is 10"),
         },
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "flag".into(),
         },
-        Token::Assign,
-        Token::True,
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident { label: "ch".into() },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::True,
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident { label: "ch".into() },
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Char { terminated: true },
             val: String::from("b"),
         },
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident { label: "fl".into() },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident { label: "fl".into() },
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Float,
             val: String::from("40.627"),
         },
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident { label: "ln".into() },
-        Token::Assign,
-        Token::Ident {
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident { label: "ln".into() },
+        TokenKind::Assign,
+        TokenKind::Ident {
             label: "greet".into(),
         },
-        Token::Dot,
-        Token::Ident {
+        TokenKind::Dot,
+        TokenKind::Ident {
             label: "len".into(),
         },
-        Token::LParen,
-        Token::RParen,
-        Token::Semicolon,
-        Token::Eof,
+        TokenKind::LParen,
+        TokenKind::RParen,
+        TokenKind::Semicolon,
+        TokenKind::Eof,
     ];
 
     validate_tokens(input, tokens)
@@ -179,140 +185,140 @@ fn will_you_lex_more_code() {
         "#;
 
     let tokens = vec![
-        Token::Let,
-        Token::Ident {
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "five".into(),
         },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("5"),
         },
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "ten".into(),
         },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("10"),
         },
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "add".into(),
         },
-        Token::Assign,
-        Token::Function,
-        Token::LParen,
-        Token::Ident { label: "x".into() },
-        Token::Comma,
-        Token::Ident { label: "y".into() },
-        Token::RParen,
-        Token::LCurly,
-        Token::Ident { label: "x".into() },
-        Token::Plus,
-        Token::Ident { label: "y".into() },
-        Token::Semicolon,
-        Token::RCurly,
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::Assign,
+        TokenKind::Function,
+        TokenKind::LParen,
+        TokenKind::Ident { label: "x".into() },
+        TokenKind::Comma,
+        TokenKind::Ident { label: "y".into() },
+        TokenKind::RParen,
+        TokenKind::LCurly,
+        TokenKind::Ident { label: "x".into() },
+        TokenKind::Plus,
+        TokenKind::Ident { label: "y".into() },
+        TokenKind::Semicolon,
+        TokenKind::RCurly,
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "result".into(),
         },
-        Token::Assign,
-        Token::Ident {
+        TokenKind::Assign,
+        TokenKind::Ident {
             label: "add".into(),
         },
-        Token::LParen,
-        Token::Ident {
+        TokenKind::LParen,
+        TokenKind::Ident {
             label: "five".into(),
         },
-        Token::Comma,
-        Token::Ident {
+        TokenKind::Comma,
+        TokenKind::Ident {
             label: "ten".into(),
         },
-        Token::RParen,
-        Token::Semicolon,
-        Token::Bang,
-        Token::Minus,
-        Token::ForwardSlash,
-        Token::Literal {
+        TokenKind::RParen,
+        TokenKind::Semicolon,
+        TokenKind::Bang,
+        TokenKind::Minus,
+        TokenKind::ForwardSlash,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("5"),
         },
-        Token::Asterisk,
-        Token::Semicolon,
-        Token::Literal {
+        TokenKind::Asterisk,
+        TokenKind::Semicolon,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("5"),
         },
-        Token::LessThan,
-        Token::Literal {
+        TokenKind::LessThan,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("10"),
         },
-        Token::GreaterThan,
-        Token::Literal {
+        TokenKind::GreaterThan,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("5"),
         },
-        Token::Semicolon,
-        Token::If,
-        Token::LParen,
-        Token::Literal {
+        TokenKind::Semicolon,
+        TokenKind::If,
+        TokenKind::LParen,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("5"),
         },
-        Token::LessThan,
-        Token::Literal {
+        TokenKind::LessThan,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("10"),
         },
-        Token::RParen,
-        Token::LCurly,
-        Token::Return,
-        Token::True,
-        Token::Semicolon,
-        Token::RCurly,
-        Token::Else,
-        Token::LCurly,
-        Token::Return,
-        Token::False,
-        Token::Semicolon,
-        Token::RCurly,
-        Token::Literal {
+        TokenKind::RParen,
+        TokenKind::LCurly,
+        TokenKind::Return,
+        TokenKind::True,
+        TokenKind::Semicolon,
+        TokenKind::RCurly,
+        TokenKind::Else,
+        TokenKind::LCurly,
+        TokenKind::Return,
+        TokenKind::False,
+        TokenKind::Semicolon,
+        TokenKind::RCurly,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("5"),
         },
-        Token::LessThanEqual,
-        Token::Literal {
+        TokenKind::LessThanEqual,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("10"),
         },
-        Token::Semicolon,
-        Token::Literal {
+        TokenKind::Semicolon,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("10"),
         },
-        Token::Equal,
-        Token::Literal {
+        TokenKind::Equal,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("10"),
         },
-        Token::Semicolon,
-        Token::Literal {
+        TokenKind::Semicolon,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("10"),
         },
-        Token::NotEqual,
-        Token::Literal {
+        TokenKind::NotEqual,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("9"),
         },
-        Token::Semicolon,
-        Token::Eof,
+        TokenKind::Semicolon,
+        TokenKind::Eof,
     ];
 
     validate_tokens(input, tokens)
@@ -320,64 +326,64 @@ fn will_you_lex_more_code() {
 
 #[test]
 fn will_you_lex_from_a_file() {
-    let contents = fs::read_to_string("..docs/examples/basic.lace").unwrap();
+    let contents = fs::read_to_string("../docs/examples/basic.lace").unwrap();
     let input = contents.as_str();
 
     let tokens = vec![
-        Token::Function,
-        Token::Ident {
+        TokenKind::Function,
+        TokenKind::Ident {
             label: "main".into(),
         },
-        Token::LParen,
-        Token::RParen,
-        Token::LCurly,
-        Token::Let,
-        Token::Ident {
+        TokenKind::LParen,
+        TokenKind::RParen,
+        TokenKind::LCurly,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "num1".into(),
         },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("69"),
         },
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "num2".into(),
         },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: String::from("420"),
         },
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "bigger_of_the_2".into(),
         },
-        Token::Assign,
-        Token::Function,
-        Token::LParen,
-        Token::Ident { label: "x".into() },
-        Token::Comma,
-        Token::Ident { label: "y".into() },
-        Token::RParen,
-        Token::LCurly,
-        Token::If,
-        Token::Ident { label: "x".into() },
-        Token::GreaterThan,
-        Token::Ident { label: "y".into() },
-        Token::LCurly,
-        Token::Ident { label: "x".into() },
-        Token::RCurly,
-        Token::Else,
-        Token::LCurly,
-        Token::Ident { label: "y".into() },
-        Token::RCurly,
-        Token::RCurly,
-        Token::Semicolon,
-        Token::RCurly,
-        Token::Eof,
+        TokenKind::Assign,
+        TokenKind::Function,
+        TokenKind::LParen,
+        TokenKind::Ident { label: "x".into() },
+        TokenKind::Comma,
+        TokenKind::Ident { label: "y".into() },
+        TokenKind::RParen,
+        TokenKind::LCurly,
+        TokenKind::If,
+        TokenKind::Ident { label: "x".into() },
+        TokenKind::GreaterThan,
+        TokenKind::Ident { label: "y".into() },
+        TokenKind::LCurly,
+        TokenKind::Ident { label: "x".into() },
+        TokenKind::RCurly,
+        TokenKind::Else,
+        TokenKind::LCurly,
+        TokenKind::Ident { label: "y".into() },
+        TokenKind::RCurly,
+        TokenKind::RCurly,
+        TokenKind::Semicolon,
+        TokenKind::RCurly,
+        TokenKind::Eof,
     ];
 
     validate_tokens(input, tokens)
@@ -395,27 +401,27 @@ fn will_you_escape() {
     "#;
 
     let tokens = vec![
-        Token::Let,
-        Token::Ident {
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "msg".into(),
         },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Str { terminated: true },
             val: String::from(r#"He said, "Lemons taste good.""#),
         },
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident {
+        TokenKind::Semicolon,
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "other".into(),
         },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Str { terminated: true },
             val: String::from(r#"Escape the \escape"#),
         },
-        Token::Semicolon,
-        Token::Eof,
+        TokenKind::Semicolon,
+        TokenKind::Eof,
     ];
 
     validate_tokens(input, tokens)
@@ -433,39 +439,39 @@ block comment */
     "#;
 
     let tokens = vec![
-        Token::LineComment {
+        TokenKind::LineComment {
             content: " Hello".into(),
         },
-        Token::LineComment {
+        TokenKind::LineComment {
             content: "What is up".into(),
         },
-        Token::Let,
-        Token::Ident {
+        TokenKind::Let,
+        TokenKind::Ident {
             label: "count".into(),
         },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: "0".into(),
         },
-        Token::Semicolon,
-        Token::LineComment {
+        TokenKind::Semicolon,
+        TokenKind::LineComment {
             content: " This is a counter".into(),
         },
-        Token::Ident {
+        TokenKind::Ident {
             label: "count".into(),
         },
-        Token::Assign,
-        Token::Ident {
+        TokenKind::Assign,
+        TokenKind::Ident {
             label: "count".into(),
         },
-        Token::Plus,
-        Token::Literal {
+        TokenKind::Plus,
+        TokenKind::Literal {
             kind: LiteralKind::Int,
             val: "1".into(),
         },
-        Token::Semicolon,
-        Token::BlockComment {
+        TokenKind::Semicolon,
+        TokenKind::BlockComment {
             content: " This is a\nblock comment ".into(),
             terminated: true,
         },
@@ -481,7 +487,7 @@ fn detect_unterminated_comment() {
 unterminated
 block comment"#;
 
-    let tokens = vec![Token::BlockComment {
+    let tokens = vec![TokenKind::BlockComment {
         content: "This is an\nunterminated\nblock comment".into(),
         terminated: false,
     }];
@@ -494,14 +500,14 @@ fn detect_unterminated_string() {
     let input = r#"let s = "unterm;"#;
 
     let tokens = vec![
-        Token::Let,
-        Token::Ident { label: "s".into() },
-        Token::Assign,
-        Token::Literal {
+        TokenKind::Let,
+        TokenKind::Ident { label: "s".into() },
+        TokenKind::Assign,
+        TokenKind::Literal {
             kind: LiteralKind::Str { terminated: false },
             val: "unterm".into(),
         },
-        Token::Semicolon,
+        TokenKind::Semicolon,
     ];
 
     validate_tokens(input, tokens)
@@ -512,11 +518,11 @@ fn detect_illegal() {
     let input = "]+!Γ¡É≡ƒÜª";
 
     let tokens = vec![
-        Token::RBracket,
-        Token::Plus,
-        Token::Bang,
-        Token::Illegal,
-        Token::Illegal,
+        TokenKind::RBracket,
+        TokenKind::Plus,
+        TokenKind::Bang,
+        TokenKind::Illegal,
+        TokenKind::Illegal,
     ];
 
     validate_tokens(input, tokens)

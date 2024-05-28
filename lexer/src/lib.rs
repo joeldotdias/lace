@@ -3,7 +3,11 @@ pub mod token;
 #[cfg(test)]
 mod tests;
 
-use token::{LiteralKind, Token};
+use token::{
+    kind::{LiteralKind, TokenKind},
+    span::Span,
+    Token,
+};
 
 /// Iterator over the code
 /// Acts as a cursor over the input
@@ -16,15 +20,25 @@ pub struct Lexer {
     read_position: usize,
     /// current character under examination as a byte
     curr_ch: u8,
+    /// position of each line break
+    line_breaks: Vec<usize>,
 }
 
 impl Lexer {
     pub fn new(input: String) -> Self {
+        let mut line_breaks = vec![0];
+        line_breaks.extend(
+            input
+                .chars()
+                .enumerate()
+                .filter_map(|(ln, ch)| (ch == '\n').then_some(ln + 1)),
+        );
         let mut lexer = Lexer {
             input: input.into_bytes(),
             position: 0,
             read_position: 0,
             curr_ch: 0,
+            line_breaks,
         };
 
         lexer.advance_byte();
@@ -32,87 +46,116 @@ impl Lexer {
         lexer
     }
 
-    pub fn next_token(&mut self) -> Token {
-        self.skip_whitespace();
+    pub fn make_span(&self, start_pos: usize) -> Span {
+        let end_pos = self.read_position;
 
+        let start_line = match self
+            .line_breaks
+            .iter()
+            .enumerate()
+            .find_map(|(ln, &ch)| (ch > start_pos).then_some(ln))
+        {
+            Some(n) => n,
+            None => self.line_breaks.len(),
+        };
+
+        let end_line = match self
+            .line_breaks
+            .iter()
+            .enumerate()
+            .find_map(|(ln, &ch)| (ch + 1 > end_pos).then_some(ln))
+        {
+            Some(n) => n,
+            None => self.line_breaks.len(),
+        };
+
+        Span {
+            start_row: start_line,
+            end_row: end_line,
+            start_col: start_pos,
+            end_col: end_pos,
+        }
+    }
+
+    pub fn token_kind(&mut self) -> TokenKind {
         let token = match self.curr_ch {
-            b'{' => Token::LCurly,
-            b'}' => Token::RCurly,
-            b'(' => Token::LParen,
-            b')' => Token::RParen,
-            b'[' => Token::LBracket,
-            b']' => Token::RBracket,
-            b'.' => Token::Dot,
-            b',' => Token::Comma,
-            b':' => Token::Colon,
-            b';' => Token::Semicolon,
-            b'+' => Token::Plus,
-            b'-' => Token::Minus,
+            b'{' => TokenKind::LCurly,
+            b'}' => TokenKind::RCurly,
+            b'(' => TokenKind::LParen,
+            b')' => TokenKind::RParen,
+            b'[' => TokenKind::LBracket,
+            b']' => TokenKind::RBracket,
+            b'.' => TokenKind::Dot,
+            b',' => TokenKind::Comma,
+            b':' => TokenKind::Colon,
+            b';' => TokenKind::Semicolon,
+            b'+' => TokenKind::Plus,
+            b'-' => TokenKind::Minus,
             b'!' => {
                 if self.peek() == b'=' {
                     self.advance_byte();
-                    Token::NotEqual
+                    TokenKind::NotEqual
                 } else {
-                    Token::Bang
+                    TokenKind::Bang
                 }
             }
-            b'*' => Token::Asterisk,
+            b'*' => TokenKind::Asterisk,
             b'/' => {
                 if self.peek() == b'/' {
                     self.read_line_comment()
                 } else if self.peek() == b'*' {
                     self.read_block_comment()
                 } else {
-                    Token::ForwardSlash
+                    TokenKind::ForwardSlash
                 }
             }
-            b'%' => Token::Modulo,
+            b'%' => TokenKind::Modulo,
             b'<' => {
                 if self.peek() == b'=' {
                     self.advance_byte();
-                    Token::LessThanEqual
+                    TokenKind::LessThanEqual
                 } else {
-                    Token::LessThan
+                    TokenKind::LessThan
                 }
             }
             b'>' => {
                 if self.peek() == b'=' {
                     self.advance_byte();
-                    Token::GreaterThanEqual
+                    TokenKind::GreaterThanEqual
                 } else {
-                    Token::GreaterThan
+                    TokenKind::GreaterThan
                 }
             }
             b'=' => {
                 if self.peek() == b'=' {
                     self.advance_byte();
-                    Token::Equal
+                    TokenKind::Equal
                 } else {
-                    Token::Assign
+                    TokenKind::Assign
                 }
             }
             b'|' => {
                 if self.peek() == b'|' {
                     self.advance_byte();
-                    Token::Or
+                    TokenKind::Or
                 } else {
-                    Token::Illegal
+                    TokenKind::Illegal
                 }
             }
             b'&' => {
                 if self.peek() == b'&' {
                     self.advance_byte();
-                    Token::And
+                    TokenKind::And
                 } else {
-                    Token::Illegal
+                    TokenKind::Illegal
                 }
             }
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                 let label = self.read_ident();
 
-                return match Token::try_keyword(&label) {
+                return match TokenKind::try_keyword(&label) {
                     Some(keyword) => keyword,
-                    None => Token::Ident { label },
+                    None => TokenKind::Ident { label },
                 };
             }
             b'0'..=b'9' => {
@@ -124,13 +167,25 @@ impl Lexer {
             b'"' => {
                 return self.read_str();
             }
-            0 => Token::Eof,
-            _ => Token::Illegal,
+            0 => TokenKind::Eof,
+            _ => TokenKind::Illegal,
         };
 
         self.advance_byte();
 
         token
+    }
+
+    pub fn next_token(&mut self) -> Token {
+        self.skip_whitespace();
+        let start = self.read_position;
+
+        let kind = self.token_kind();
+
+        Token {
+            kind,
+            span: self.make_span(start),
+        }
     }
 
     fn peek(&self) -> u8 {
@@ -174,7 +229,7 @@ impl Lexer {
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
     }
 
-    fn read_int(&mut self) -> Token {
+    fn read_int(&mut self) -> TokenKind {
         let pos = self.position;
         let mut dot = false;
 
@@ -191,13 +246,13 @@ impl Lexer {
             LiteralKind::Int
         };
 
-        Token::Literal {
+        TokenKind::Literal {
             kind,
             val: String::from_utf8_lossy(&self.input[pos..self.position]).to_string(),
         }
     }
 
-    fn read_str(&mut self) -> Token {
+    fn read_str(&mut self) -> TokenKind {
         self.advance_byte(); // skip the opening "
 
         let mut estr = String::new();
@@ -223,13 +278,13 @@ impl Lexer {
             self.advance_byte(); // skip the closing "
         }
 
-        Token::Literal {
+        TokenKind::Literal {
             kind: LiteralKind::Str { terminated },
             val: estr,
         }
     }
 
-    fn read_char(&mut self) -> Token {
+    fn read_char(&mut self) -> TokenKind {
         self.advance_byte();
 
         let mut val = String::new();
@@ -241,13 +296,13 @@ impl Lexer {
             self.advance_byte();
         }
 
-        Token::Literal {
+        TokenKind::Literal {
             kind: LiteralKind::Char { terminated },
             val,
         }
     }
 
-    fn read_line_comment(&mut self) -> Token {
+    fn read_line_comment(&mut self) -> TokenKind {
         // skip the '//' which denotes start of a comment
         self.advance_byte();
         self.advance_byte();
@@ -262,10 +317,10 @@ impl Lexer {
 
         self.advance_byte();
 
-        Token::LineComment { content: cm_str }
+        TokenKind::LineComment { content: cm_str }
     }
 
-    fn read_block_comment(&mut self) -> Token {
+    fn read_block_comment(&mut self) -> TokenKind {
         // skip the '/*' which denotes start of a comment
         self.advance_byte();
         self.advance_byte();
@@ -286,7 +341,7 @@ impl Lexer {
 
         self.advance_byte();
 
-        Token::BlockComment {
+        TokenKind::BlockComment {
             content: cm_str,
             terminated,
         }

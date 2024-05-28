@@ -4,7 +4,7 @@ use std::fmt::Display;
 /// In case of a string or integer literal,
 /// we store the datatype and value
 #[derive(Debug, PartialEq, Clone)]
-pub enum Token {
+pub enum TokenKind {
     /// Identifiers
     Ident {
         label: String,
@@ -105,70 +105,66 @@ pub enum Token {
     Eof,
 }
 
-impl Display for Token {
+impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Token::Ident { label } => write!(f, "Ident({})", label),
-            Token::Literal { kind, val } => write!(f, "{} Literal({})", kind, val),
-            Token::Assign => write!(f, "Assign"),
-            Token::Bang => write!(f, "Bang"),
-            Token::Minus => write!(f, "Minus"),
-            Token::Plus => write!(f, "Plus"),
-            Token::Asterisk => write!(f, "Asterisk"),
-            Token::ForwardSlash => write!(f, "ForwardSlash"),
-            Token::Modulo => write!(f, "Modulo"),
-            Token::Equal => write!(f, "Equal"),
-            Token::NotEqual => write!(f, "NotEqual"),
-            Token::LessThan => write!(f, "LessThan"),
-            Token::GreaterThan => write!(f, "GreaterThan"),
-            Token::LessThanEqual => write!(f, "LessThanEqual"),
-            Token::GreaterThanEqual => write!(f, "GreaterThanEqual"),
-            Token::Or => write!(f, "Or"),
-            Token::And => write!(f, "And"),
-            Token::Dot => write!(f, "Dot"),
-            Token::Comma => write!(f, "Comma"),
-            Token::Colon => write!(f, "Colon"),
-            Token::Semicolon => write!(f, "Semicolon"),
-            Token::LParen => write!(f, "Lparen"),
-            Token::RParen => write!(f, "Rparen"),
-            Token::LCurly => write!(f, "LSquirly"),
-            Token::RCurly => write!(f, "RSquirly"),
-            Token::LBracket => write!(f, "LBracket"),
-            Token::RBracket => write!(f, "RBracket"),
-            Token::Let => write!(f, "Let"),
-            Token::Function => write!(f, "Function"),
-            Token::Source => write!(f, "Source"),
-            Token::Return => write!(f, "Return"),
-            Token::If => write!(f, "If"),
-            Token::Else => write!(f, "Else"),
-            Token::True => write!(f, "True"),
-            Token::False => write!(f, "False"),
-            Token::LineComment { content } => write!(f, "LineComment {}", content),
-            Token::BlockComment {
+            TokenKind::Ident { label } => write!(f, "Ident({})", label),
+            TokenKind::Literal { kind, val } => write!(f, "{} Literal({})", kind, val),
+            TokenKind::Assign => write!(f, "Assign"),
+            TokenKind::Bang => write!(f, "Bang"),
+            TokenKind::Minus => write!(f, "Minus"),
+            TokenKind::Plus => write!(f, "Plus"),
+            TokenKind::Asterisk => write!(f, "Asterisk"),
+            TokenKind::ForwardSlash => write!(f, "ForwardSlash"),
+            TokenKind::Modulo => write!(f, "Modulo"),
+            TokenKind::Equal => write!(f, "Equal"),
+            TokenKind::NotEqual => write!(f, "NotEqual"),
+            TokenKind::LessThan => write!(f, "LessThan"),
+            TokenKind::GreaterThan => write!(f, "GreaterThan"),
+            TokenKind::LessThanEqual => write!(f, "LessThanEqual"),
+            TokenKind::GreaterThanEqual => write!(f, "GreaterThanEqual"),
+            TokenKind::Or => write!(f, "Or"),
+            TokenKind::And => write!(f, "And"),
+            TokenKind::Dot => write!(f, "Dot"),
+            TokenKind::Comma => write!(f, "Comma"),
+            TokenKind::Colon => write!(f, "Colon"),
+            TokenKind::Semicolon => write!(f, "Semicolon"),
+            TokenKind::LParen => write!(f, "Lparen"),
+            TokenKind::RParen => write!(f, "Rparen"),
+            TokenKind::LCurly => write!(f, "LSquirly"),
+            TokenKind::RCurly => write!(f, "RSquirly"),
+            TokenKind::LBracket => write!(f, "LBracket"),
+            TokenKind::RBracket => write!(f, "RBracket"),
+            TokenKind::Let => write!(f, "Let"),
+            TokenKind::Function => write!(f, "Function"),
+            TokenKind::Source => write!(f, "Source"),
+            TokenKind::Return => write!(f, "Return"),
+            TokenKind::If => write!(f, "If"),
+            TokenKind::Else => write!(f, "Else"),
+            TokenKind::True => write!(f, "True"),
+            TokenKind::False => write!(f, "False"),
+            TokenKind::LineComment { content } => write!(f, "LineComment {}", content),
+            TokenKind::BlockComment {
                 content,
                 terminated: _,
             } => write!(f, "BlockComment {}", content),
-            Token::Eof => write!(f, "Eof"),
-            Token::Illegal => write!(f, "Illegal"),
+            TokenKind::Eof => write!(f, "Eof"),
+            TokenKind::Illegal => write!(f, "Illegal"),
         }
     }
 }
 
-impl Token {
-    pub fn reached_eof(&self) -> bool {
-        *self == Token::Eof
-    }
-
-    pub fn try_keyword(label: &str) -> Option<Token> {
+impl TokenKind {
+    pub fn try_keyword(label: &str) -> Option<TokenKind> {
         let keyword = match label {
-            "fn" => Token::Function,
-            "let" => Token::Let,
-            "if" => Token::If,
-            "else" => Token::Else,
-            "true" => Token::True,
-            "false" => Token::False,
-            "return" => Token::Return,
-            "source" => Token::Source,
+            "fn" => TokenKind::Function,
+            "let" => TokenKind::Let,
+            "if" => TokenKind::If,
+            "else" => TokenKind::Else,
+            "true" => TokenKind::True,
+            "false" => TokenKind::False,
+            "return" => TokenKind::Return,
+            "source" => TokenKind::Source,
             _ => return None,
         };
 

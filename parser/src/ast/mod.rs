@@ -3,18 +3,17 @@ pub mod statement;
 
 use std::fmt::Display;
 
+use lace_lexer::token::{dummy_token, kind::TokenKind, Token};
 use nodes::{
-    ConditionalOperator, FunctionCall, FunctionLiteral, IdentNode, InfixOperator, PrefixOperator,
-    PrimitiveNode,
+    ArrayLiteral, ConditionalOperator, FunctionCall, FunctionLiteral, HashLiteral, IdentNode,
+    IndexAccess, InfixOperator, PrefixOperator, PrimitiveNode,
 };
 use statement::Statement;
 
 use crate::{
     errors::{ExprError, NoPrefixParser, ParserError},
-    Parser, Token,
+    Parser,
 };
-
-use self::nodes::{ArrayLiteral, HashLiteral, IndexAccess};
 
 #[derive(Default)]
 pub struct Program {
@@ -69,45 +68,48 @@ impl Expression {
         parser: &mut Parser,
         precedence: Precedence,
     ) -> Result<Expression, Box<dyn ParserError>> {
-        let mut left_expr = match parser.curr_token.clone() {
-            Token::Ident { label: _ } => IdentNode::parse(parser).map(Expression::Identifier),
-            Token::Literal { kind: _, val: _ } | Token::False | Token::True => {
+        let mut left_expr = match &parser.curr_token.kind {
+            TokenKind::Ident { label: _ } => IdentNode::parse(parser).map(Expression::Identifier),
+            TokenKind::Literal { kind: _, val: _ } | TokenKind::False | TokenKind::True => {
                 PrimitiveNode::parse(parser).map(Expression::Primitive)
             }
-            Token::Bang | Token::Minus => PrefixOperator::parse(parser).map(Expression::Unary),
-            Token::LParen => Self::parse_grouped_expr(parser),
-            Token::If => ConditionalOperator::parse(parser).map(Expression::Conditional),
-            Token::Function => FunctionLiteral::parse(parser).map(Expression::FunctionDef),
-            Token::LBracket => ArrayLiteral::parse(parser).map(Expression::Array),
-            Token::LCurly => HashLiteral::parse(parser).map(Expression::HashMapLiteral),
+            TokenKind::Bang | TokenKind::Minus => {
+                PrefixOperator::parse(parser).map(Expression::Unary)
+            }
+            TokenKind::LParen => Self::parse_grouped_expr(parser),
+            TokenKind::If => ConditionalOperator::parse(parser).map(Expression::Conditional),
+            TokenKind::Function => FunctionLiteral::parse(parser).map(Expression::FunctionDef),
+            TokenKind::LBracket => ArrayLiteral::parse(parser).map(Expression::Array),
+            TokenKind::LCurly => HashLiteral::parse(parser).map(Expression::HashMapLiteral),
             _ => return Err(Box::new(NoPrefixParser::from(parser.curr_token.clone()))),
         }?;
 
-        while !parser.peek_token_is(&Token::Semicolon) && precedence < parser.peek_precedence() {
-            match &parser.peeked_token {
-                Token::Plus
-                | Token::Minus
-                | Token::ForwardSlash
-                | Token::Asterisk
-                | Token::Equal
-                | Token::NotEqual
-                | Token::LessThan
-                | Token::GreaterThan
-                | Token::LessThanEqual
-                | Token::GreaterThanEqual
-                | Token::And
-                | Token::Or
-                | Token::Modulo => {
+        while !parser.peek_token_is(&TokenKind::Semicolon) && precedence < parser.peek_precedence()
+        {
+            match &parser.peeked_token.kind {
+                TokenKind::Plus
+                | TokenKind::Minus
+                | TokenKind::ForwardSlash
+                | TokenKind::Asterisk
+                | TokenKind::Equal
+                | TokenKind::NotEqual
+                | TokenKind::LessThan
+                | TokenKind::GreaterThan
+                | TokenKind::LessThanEqual
+                | TokenKind::GreaterThanEqual
+                | TokenKind::And
+                | TokenKind::Or
+                | TokenKind::Modulo => {
                     parser.next_token();
                     left_expr = Expression::Binary(InfixOperator::parse(parser, left_expr)?);
                 }
 
-                Token::LParen => {
+                TokenKind::LParen => {
                     parser.next_token();
                     left_expr = Expression::FunctionCall(FunctionCall::parse(parser, left_expr)?);
                 }
 
-                Token::LBracket => {
+                TokenKind::LBracket => {
                     parser.next_token();
                     left_expr = Expression::ArrIndex(IndexAccess::parse(parser, left_expr)?);
                 }
@@ -124,7 +126,7 @@ impl Expression {
 
         let expr = Expression::parse(parser, Precedence::Lowest);
 
-        if parser.expect_peek(&Token::RParen) {
+        if parser.expect_peek(&dummy_token(TokenKind::RParen)) {
             expr
         } else {
             Err(Box::new(ExprError::from(None)))
@@ -136,7 +138,7 @@ impl Expression {
         end: &Token,
     ) -> Result<Vec<Expression>, Box<dyn ParserError>> {
         let mut expr_list = Vec::new();
-        if parser.peek_token_is(end) {
+        if parser.peek_token_is(&end.kind) {
             parser.next_token();
             return Ok(expr_list);
         }
@@ -144,7 +146,7 @@ impl Expression {
         parser.next_token();
         expr_list.push(Expression::parse(parser, Precedence::Lowest)?);
 
-        while parser.peek_token_is(&Token::Comma) {
+        while parser.peek_token_is(&TokenKind::Comma) {
             parser.next_token();
             parser.next_token();
             expr_list.push(Expression::parse(parser, Precedence::Lowest)?);
@@ -172,18 +174,18 @@ pub enum Precedence {
 
 impl From<&Token> for Precedence {
     fn from(value: &Token) -> Self {
-        match value {
-            Token::Equal | Token::NotEqual => Precedence::Equality,
-            Token::LessThan
-            | Token::LessThanEqual
-            | Token::GreaterThan
-            | Token::GreaterThanEqual => Precedence::Index,
-            Token::Plus | Token::Minus | Token::Or => Precedence::Additive,
-            Token::ForwardSlash | Token::Asterisk | Token::Modulo | Token::And => {
+        match value.kind {
+            TokenKind::Equal | TokenKind::NotEqual => Precedence::Equality,
+            TokenKind::LessThan
+            | TokenKind::LessThanEqual
+            | TokenKind::GreaterThan
+            | TokenKind::GreaterThanEqual => Precedence::Index,
+            TokenKind::Plus | TokenKind::Minus | TokenKind::Or => Precedence::Additive,
+            TokenKind::ForwardSlash | TokenKind::Asterisk | TokenKind::Modulo | TokenKind::And => {
                 Precedence::Multiplicative
             }
-            Token::LParen => Precedence::FnCall,
-            Token::LBracket => Precedence::Index,
+            TokenKind::LParen => Precedence::FnCall,
+            TokenKind::LBracket => Precedence::Index,
             _ => Precedence::Lowest,
         }
     }

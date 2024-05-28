@@ -1,7 +1,11 @@
 use core::panic;
 use std::fmt::Display;
 
-use lace_lexer::token::{LiteralKind, Token};
+use lace_lexer::token::{
+    dummy_token,
+    kind::{LiteralKind, TokenKind},
+    Token,
+};
 
 use crate::{
     ast::{statement::BlockStatement, Expression, Precedence},
@@ -26,15 +30,18 @@ impl Display for IdentNode {
 
 impl IdentNode {
     pub fn new(token: Token) -> Self {
-        if let Token::Ident { label } = token.clone() {
-            Self { token, label }
+        if let TokenKind::Ident { label } = &token.kind {
+            Self {
+                token: token.clone(),
+                label: label.into(),
+            }
         } else {
             panic!("This function shouldn't have been called");
         }
     }
 
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
-        if let Token::Ident { label } = &parser.curr_token {
+        if let TokenKind::Ident { label } = &parser.curr_token.kind {
             Ok(Self {
                 token: parser.curr_token.clone(),
                 label: label.into(),
@@ -68,8 +75,8 @@ impl Display for PrimitiveNode {
 
 impl PrimitiveNode {
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
-        match &parser.curr_token.clone() {
-            Token::Literal { kind, val } => {
+        match &parser.curr_token.kind {
+            TokenKind::Literal { kind, val } => {
                 match kind {
                     LiteralKind::Int => match val.parse::<i64>() {
                         Ok(val) => Ok(PrimitiveNode::IntegerLiteral(val)),
@@ -93,8 +100,8 @@ impl PrimitiveNode {
                     },
                 }
             }
-            Token::True => Ok(PrimitiveNode::BooleanLiteral(true)),
-            Token::False => Ok(PrimitiveNode::BooleanLiteral(false)),
+            TokenKind::True => Ok(PrimitiveNode::BooleanLiteral(true)),
+            TokenKind::False => Ok(PrimitiveNode::BooleanLiteral(false)),
             _ => Err(Box::new(NoPrefixParser::from(parser.curr_token.clone()))),
         }
     }
@@ -193,7 +200,7 @@ impl Display for ConditionalOperator {
 
 impl ConditionalOperator {
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
-        if !parser.expect_peek(&Token::LParen) {
+        if !parser.expect_peek(&dummy_token(TokenKind::LParen)) {
             return Err(Box::new(IncompleteConditional::new(
                 None,
                 CondIssue::ExprIncorrectlyOpened,
@@ -203,14 +210,14 @@ impl ConditionalOperator {
         parser.next_token();
         let cond = Expression::parse(parser, Precedence::Lowest)?;
 
-        if !parser.expect_peek(&Token::RParen) {
+        if !parser.expect_peek(&dummy_token(TokenKind::RParen)) {
             return Err(Box::new(IncompleteConditional::new(
                 None,
                 CondIssue::ExprIncorrectlyClosed,
             )));
         }
 
-        if !parser.expect_peek(&Token::LCurly) {
+        if !parser.expect_peek(&dummy_token(TokenKind::LCurly)) {
             return Err(Box::new(IncompleteConditional::new(
                 None,
                 CondIssue::BodyIncorrectlyOpened,
@@ -220,9 +227,9 @@ impl ConditionalOperator {
         let consequence = BlockStatement::parse(parser);
         let mut alternative = None;
 
-        if parser.peek_token_is(&Token::Else) {
+        if parser.peek_token_is(&TokenKind::Else) {
             parser.next_token();
-            if !parser.expect_peek(&Token::LCurly) {
+            if !parser.expect_peek(&dummy_token(TokenKind::LCurly)) {
                 return Err(Box::new(IncompleteConditional::new(
                     None,
                     CondIssue::ExpectedElse,
@@ -273,13 +280,13 @@ impl FunctionLiteral {
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
         let name = Self::parse_function_name(parser);
 
-        if !parser.expect_peek(&Token::LParen) {
+        if !parser.expect_peek(&dummy_token(TokenKind::LParen)) {
             return Err(Box::new(FuncError::new(None, FuncIssue::FuncMissingParens)));
         }
 
         let params = Self::parse_function_params(parser)?;
 
-        if !parser.expect_peek(&Token::LCurly) {
+        if !parser.expect_peek(&dummy_token(TokenKind::LCurly)) {
             return Err(Box::new(FuncError::new(
                 None,
                 FuncIssue::BodyIncorrectlyOpened,
@@ -294,7 +301,7 @@ impl FunctionLiteral {
     fn parse_function_name(parser: &mut Parser) -> Option<String> {
         let mut name = None;
 
-        if let Token::Ident { label } = &parser.peeked_token {
+        if let TokenKind::Ident { label } = &parser.peeked_token.kind {
             name = Some(label.to_string());
             parser.next_token();
         };
@@ -305,7 +312,7 @@ impl FunctionLiteral {
     fn parse_function_params(parser: &mut Parser) -> Result<Vec<IdentNode>, Box<dyn ParserError>> {
         let mut idents = Vec::<IdentNode>::new();
 
-        if parser.peek_token_is(&Token::RParen) {
+        if parser.peek_token_is(&TokenKind::RParen) {
             parser.next_token();
             return Ok(idents);
         }
@@ -315,7 +322,7 @@ impl FunctionLiteral {
         let mut ident = IdentNode::new(parser.curr_token.clone());
         idents.push(ident);
 
-        while parser.peek_token_is(&Token::Comma) {
+        while parser.peek_token_is(&TokenKind::Comma) {
             parser.next_token(); // skip the comma
             parser.next_token(); // capture the param
 
@@ -323,7 +330,7 @@ impl FunctionLiteral {
             idents.push(ident);
         }
 
-        if !parser.expect_peek(&Token::RParen) {
+        if !parser.expect_peek(&dummy_token(TokenKind::RParen)) {
             return Err(Box::new(FuncError::new(
                 None,
                 FuncIssue::BodyIncorrectlyClosed,
@@ -355,7 +362,7 @@ impl Display for FunctionCall {
 
 impl FunctionCall {
     pub fn parse(parser: &mut Parser, function: Expression) -> Result<Self, Box<dyn ParserError>> {
-        let args = Expression::parse_expr_list(parser, &Token::RParen)?;
+        let args = Expression::parse_expr_list(parser, &dummy_token(TokenKind::RParen))?;
 
         Ok(FunctionCall {
             function: Box::new(function),
@@ -383,7 +390,7 @@ impl Display for ArrayLiteral {
 
 impl ArrayLiteral {
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
-        let elements = Expression::parse_expr_list(parser, &Token::RBracket)?;
+        let elements = Expression::parse_expr_list(parser, &dummy_token(TokenKind::RBracket))?;
         Ok(Self { elements })
     }
 }
@@ -403,7 +410,7 @@ impl IndexAccess {
     pub fn parse(parser: &mut Parser, left_expr: Expression) -> Result<Self, Box<dyn ParserError>> {
         parser.next_token();
         let index = Expression::parse(parser, Precedence::Lowest)?;
-        if !parser.expect_peek(&Token::RBracket) {
+        if !parser.expect_peek(&dummy_token(TokenKind::RBracket)) {
             // TODO: this does not belong here. Change it
             return Err(Box::new(FuncError::new(
                 None,
@@ -439,10 +446,10 @@ impl HashLiteral {
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
         let mut pairs = Vec::new();
 
-        while !parser.peek_token_is(&Token::RCurly) {
+        while !parser.peek_token_is(&TokenKind::RCurly) {
             parser.next_token();
             let key = Expression::parse(parser, Precedence::Lowest)?;
-            if !parser.expect_peek(&Token::Colon) {
+            if !parser.expect_peek(&dummy_token(TokenKind::Colon)) {
                 // TODO: this does not belong here. Change it
                 return Err(Box::new(FuncError::new(
                     None,
@@ -455,7 +462,9 @@ impl HashLiteral {
 
             pairs.push((key, val));
 
-            if !parser.peek_token_is(&Token::RCurly) && !parser.expect_peek(&Token::Comma) {
+            if !parser.peek_token_is(&TokenKind::RCurly)
+                && !parser.expect_peek(&dummy_token(TokenKind::Comma))
+            {
                 // TODO: this does not belong here. Change it
                 return Err(Box::new(FuncError::new(
                     None,
@@ -464,7 +473,7 @@ impl HashLiteral {
             }
         }
 
-        if !parser.expect_peek(&Token::RCurly) {
+        if !parser.expect_peek(&dummy_token(TokenKind::RCurly)) {
             return Err(Box::new(FuncError::new(
                 None,
                 FuncIssue::BodyIncorrectlyClosed,

@@ -1,7 +1,10 @@
 use std::path::PathBuf;
 
 use errors::{BadExpectations, ParserError};
-use lace_lexer::{token::Token, Lexer};
+use lace_lexer::{
+    token::{dummy_token, kind::TokenKind, Token},
+    Lexer,
+};
 
 use crate::ast::{
     nodes::IdentNode,
@@ -26,8 +29,10 @@ impl Parser {
     pub fn new(lexer: Lexer) -> Self {
         let mut parser = Self {
             lexer,
-            curr_token: Token::Illegal,
-            peeked_token: Token::Illegal,
+            // curr_token: TokenKind::Illegal,
+            // peeked_token: TokenKind::Illegal,
+            curr_token: dummy_token(TokenKind::Illegal),
+            peeked_token: dummy_token(TokenKind::Illegal),
             errors: Vec::new(),
         };
 
@@ -57,30 +62,30 @@ impl Parser {
     }
 
     pub fn parse_statement(&mut self) -> Option<Statement> {
-        match self.curr_token {
-            Token::Let => self.parse_let().map(Statement::Assignment),
-            Token::Return => self.parse_return().map(Statement::Return),
-            Token::Source => self.parse_source().map(Statement::Source),
+        match self.curr_token.kind {
+            TokenKind::Let => self.parse_let().map(Statement::Assignment),
+            TokenKind::Return => self.parse_return().map(Statement::Return),
+            TokenKind::Source => self.parse_source().map(Statement::Source),
             _ => self.parse_expression().map(Statement::Expr),
         }
     }
 
     pub fn parse_let(&mut self) -> Option<LetStatement> {
-        if !self.expect_peek(&Token::Ident {
+        if !self.expect_peek(&dummy_token(TokenKind::Ident {
             label: String::new(),
-        }) {
+        })) {
             return None;
         }
 
-        let name = match self.curr_token.clone() {
-            Token::Ident { label } => IdentNode {
+        let name = match &self.curr_token.kind {
+            TokenKind::Ident { label } => IdentNode {
                 token: self.curr_token.clone(),
-                label,
+                label: label.into(),
             },
             _ => unreachable!("no happen please"),
         };
 
-        if !self.expect_peek(&Token::Assign) {
+        if !self.expect_peek(&dummy_token(TokenKind::Assign)) {
             return None;
         }
 
@@ -98,7 +103,7 @@ impl Parser {
             literal.name = Some(name.token.to_string());
         };
 
-        if self.peek_token_is(&Token::Semicolon) {
+        if self.peek_token_is(&TokenKind::Semicolon) {
             self.next_token();
         }
 
@@ -116,7 +121,7 @@ impl Parser {
             }
         };
 
-        if self.peek_token_is(&Token::Semicolon) {
+        if self.peek_token_is(&TokenKind::Semicolon) {
             self.next_token();
         }
 
@@ -145,7 +150,7 @@ impl Parser {
             }
         };
 
-        if self.peek_token_is(&Token::Semicolon) {
+        if self.peek_token_is(&TokenKind::Semicolon) {
             self.next_token();
         }
 
@@ -157,7 +162,7 @@ impl Parser {
     fn parse_expression(&mut self) -> Option<Expression> {
         let expr = Expression::parse(self, Precedence::Lowest);
 
-        if self.peek_token_is(&Token::Semicolon) {
+        if self.peek_token_is(&TokenKind::Semicolon) {
             self.next_token();
         }
 
@@ -179,7 +184,7 @@ impl Parser {
     }
 
     fn expect_peek(&mut self, token: &Token) -> bool {
-        if self.peek_token_is(token) {
+        if self.peek_token_is(&token.kind) {
             self.next_token();
             true
         } else {
@@ -188,13 +193,13 @@ impl Parser {
         }
     }
 
-    fn peek_token_is(&mut self, token: &Token) -> bool {
-        match self.peeked_token {
-            Token::Ident { label: _ } => matches!(token, Token::Ident { label: _ }),
-            Token::Literal { kind: _, val: _ } => {
-                matches!(token, Token::Literal { kind: _, val: _ })
+    fn peek_token_is(&mut self, token_kind: &TokenKind) -> bool {
+        match self.peeked_token.kind {
+            TokenKind::Ident { label: _ } => matches!(token_kind, TokenKind::Ident { label: _ }),
+            TokenKind::Literal { kind: _, val: _ } => {
+                matches!(token_kind, TokenKind::Literal { kind: _, val: _ })
             }
-            _ => &self.peeked_token == token,
+            _ => &self.peeked_token.kind == token_kind,
         }
     }
 
@@ -212,12 +217,12 @@ impl Parser {
     }
 
     fn curr_token_is(&self, token: &Token) -> bool {
-        match self.curr_token {
-            Token::Ident { label: _ } => matches!(token, Token::Ident { label: _ }),
-            Token::Literal { kind: _, val: _ } => {
-                matches!(token, Token::Literal { kind: _, val: _ })
+        match self.curr_token.kind {
+            TokenKind::Ident { label: _ } => matches!(token.kind, TokenKind::Ident { label: _ }),
+            TokenKind::Literal { kind: _, val: _ } => {
+                matches!(token.kind, TokenKind::Literal { kind: _, val: _ })
             }
-            _ => &self.curr_token == token,
+            _ => self.curr_token.kind == token.kind,
         }
     }
 

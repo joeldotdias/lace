@@ -5,7 +5,10 @@ pub mod object;
 use std::{cell::RefCell, collections::HashMap, fs, rc::Rc};
 
 use crate::{environment::Environment, object::Object};
-use lace_lexer::{token::Token, Lexer};
+use lace_lexer::{
+    token::{kind::TokenKind, Token},
+    Lexer,
+};
 use lace_parser::{
     ast::{
         nodes::{ConditionalOperator, HashLiteral, IdentNode, IndexAccess, PrimitiveNode},
@@ -309,9 +312,9 @@ impl Eval {
     }
 
     pub fn eval_prefix(operator: &Token, right: &Object) -> Object {
-        match operator {
-            Token::Bang => Self::eval_bang_expr(right),
-            Token::Minus => Self::eval_minus_expr(right),
+        match operator.kind {
+            TokenKind::Bang => Self::eval_bang_expr(right),
+            TokenKind::Minus => Self::eval_minus_expr(right),
             _ => Object::Error(format!("Invalid operator: {}", operator)),
         }
     }
@@ -361,18 +364,18 @@ impl Eval {
     }
 
     pub fn eval_integer_infix_expr(operator: &Token, x: i64, y: i64) -> Object {
-        match operator {
-            Token::Plus => Object::Integer(x + y),
-            Token::Minus => Object::Integer(x - y),
-            Token::ForwardSlash => Object::Integer(x / y),
-            Token::Modulo => Object::Integer(x % y),
-            Token::Asterisk => Object::Integer(x * y),
-            Token::Equal => Object::Boolean(x == y),
-            Token::NotEqual => Object::Boolean(x != y),
-            Token::LessThan => Object::Boolean(x < y),
-            Token::GreaterThan => Object::Boolean(x > y),
-            Token::LessThanEqual => Object::Boolean(x <= y),
-            Token::GreaterThanEqual => Object::Boolean(x >= y),
+        match operator.kind {
+            TokenKind::Plus => Object::Integer(x + y),
+            TokenKind::Minus => Object::Integer(x - y),
+            TokenKind::ForwardSlash => Object::Integer(x / y),
+            TokenKind::Modulo => Object::Integer(x % y),
+            TokenKind::Asterisk => Object::Integer(x * y),
+            TokenKind::Equal => Object::Boolean(x == y),
+            TokenKind::NotEqual => Object::Boolean(x != y),
+            TokenKind::LessThan => Object::Boolean(x < y),
+            TokenKind::GreaterThan => Object::Boolean(x > y),
+            TokenKind::LessThanEqual => Object::Boolean(x <= y),
+            TokenKind::GreaterThanEqual => Object::Boolean(x >= y),
             _ => {
                 unreachable!("{}", format!("No infix for {}", operator))
             }
@@ -380,18 +383,18 @@ impl Eval {
     }
 
     pub fn eval_float_infix_expr(operator: &Token, x: f64, y: f64) -> Object {
-        match operator {
-            Token::Plus => Object::Float(x + y),
-            Token::Minus => Object::Float(x - y),
-            Token::ForwardSlash => Object::Float(x / y),
-            Token::Modulo => Object::Float(x % y),
-            Token::Asterisk => Object::Float(x * y),
-            Token::Equal => Object::Boolean(x == y),
-            Token::NotEqual => Object::Boolean(x != y),
-            Token::LessThan => Object::Boolean(x < y),
-            Token::GreaterThan => Object::Boolean(x > y),
-            Token::LessThanEqual => Object::Boolean(x <= y),
-            Token::GreaterThanEqual => Object::Boolean(x >= y),
+        match operator.kind {
+            TokenKind::Plus => Object::Float(x + y),
+            TokenKind::Minus => Object::Float(x - y),
+            TokenKind::ForwardSlash => Object::Float(x / y),
+            TokenKind::Modulo => Object::Float(x % y),
+            TokenKind::Asterisk => Object::Float(x * y),
+            TokenKind::Equal => Object::Boolean(x == y),
+            TokenKind::NotEqual => Object::Boolean(x != y),
+            TokenKind::LessThan => Object::Boolean(x < y),
+            TokenKind::GreaterThan => Object::Boolean(x > y),
+            TokenKind::LessThanEqual => Object::Boolean(x <= y),
+            TokenKind::GreaterThanEqual => Object::Boolean(x >= y),
             _ => {
                 println!("{}", operator);
                 unreachable!("No infix for float")
@@ -400,19 +403,19 @@ impl Eval {
     }
 
     pub fn eval_bool_infix_expr(operator: &Token, left: bool, right: bool) -> Object {
-        match operator {
-            Token::Equal => Object::Boolean(left == right),
-            Token::NotEqual => Object::Boolean(left != right),
-            Token::And => Object::Boolean(left && right),
-            Token::Or => Object::Boolean(left || right),
+        match operator.kind {
+            TokenKind::Equal => Object::Boolean(left == right),
+            TokenKind::NotEqual => Object::Boolean(left != right),
+            TokenKind::And => Object::Boolean(left && right),
+            TokenKind::Or => Object::Boolean(left || right),
             _ => unreachable!("No infix for bool"),
         }
     }
 
     pub fn eval_str_infix_expr(operator: &Token, left: String, right: String) -> Object {
-        match operator {
-            Token::Plus => Object::Str(format!("{}{}", left, right)),
-            Token::Minus => {
+        match operator.kind {
+            TokenKind::Plus => Object::Str(format!("{}{}", left, right)),
+            TokenKind::Minus => {
                 if left.ends_with(&right) {
                     Object::Str(
                         left.as_str()

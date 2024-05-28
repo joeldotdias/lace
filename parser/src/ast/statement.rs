@@ -1,6 +1,6 @@
 use std::{fmt::Display, path::PathBuf};
 
-use lace_lexer::token::Token;
+use lace_lexer::token::{dummy_token, kind::TokenKind};
 
 use crate::{
     ast::{nodes::IdentNode, Expression},
@@ -70,7 +70,9 @@ impl BlockStatement {
 
         let mut block = Vec::<Statement>::new();
 
-        while !parser.curr_token_is(&Token::RCurly) && !parser.curr_token.reached_eof() {
+        while !parser.curr_token_is(&dummy_token(TokenKind::RCurly))
+            && !parser.curr_token.reached_eof()
+        {
             if let Some(statement) = parser.parse_statement() {
                 block.push(statement);
             }
@@ -89,6 +91,6 @@ pub struct SourceStatement {
 
 impl Display for SourceStatement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", format!("Source {}", self.path.to_str().unwrap()))
+        write!(f, "Source {}", self.path.to_str().unwrap())
     }
 }

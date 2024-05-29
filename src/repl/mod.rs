@@ -54,7 +54,7 @@ pub fn run_repl() {
             false => {
                 prompt.errored();
                 parser.errors.iter().for_each(|e| {
-                    println!("{}", e.log_err());
+                    println!("{}", e.emit_err());
                 })
             }
         }

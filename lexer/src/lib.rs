@@ -12,7 +12,7 @@ use token::{
 /// Iterator over the code
 /// Acts as a cursor over the input
 pub struct Lexer {
-    /// input from the user as a vector of bytes
+    /// input from the user as a vector of characters
     input: Vec<char>,
     /// points to the current position
     position: usize,

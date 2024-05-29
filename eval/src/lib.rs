@@ -96,7 +96,7 @@ impl Eval {
                 let program = parser.parse_program();
                 if !parser.errors.is_empty() {
                     parser.errors.iter().for_each(|e| {
-                        println!("{}", e.log_err());
+                        println!("{}", e.emit_err());
                     })
                 }
                 self.eval(program)

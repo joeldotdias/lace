@@ -25,7 +25,7 @@ pub fn run_interpreter(source: PathBuf) -> Result<(), String> {
         evaluator.eval(program);
     } else {
         parser.errors.iter().for_each(|e| {
-            println!("{}", e.log_err());
+            println!("{}", e.emit_err());
         })
     }
 

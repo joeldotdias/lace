@@ -6,7 +6,7 @@ use crate::ast::Expression;
 
 // TODO: Make this more detailed. I have no idea how at this moment
 pub trait ParserError {
-    fn log_err(&self) -> String;
+    fn emit_err(&self) -> String;
 }
 
 pub struct NoPrefixParser {
@@ -20,7 +20,7 @@ impl From<Token> for NoPrefixParser {
 }
 
 impl ParserError for NoPrefixParser {
-    fn log_err(&self) -> String {
+    fn emit_err(&self) -> String {
         format!(
             "At {}:{} => No prefix parser found for {}",
             self.token.span.start_line, self.token.span.start_col, self.token.kind
@@ -66,7 +66,7 @@ impl IncompleteConditional {
 }
 
 impl ParserError for IncompleteConditional {
-    fn log_err(&self) -> String {
+    fn emit_err(&self) -> String {
         match &self.expr {
             Some(expr) => format!("{}: {}", expr, self.issue),
             None => format!("{}", self.issue),
@@ -104,7 +104,7 @@ impl FuncError {
 }
 
 impl ParserError for FuncError {
-    fn log_err(&self) -> String {
+    fn emit_err(&self) -> String {
         match &self.func_name {
             Some(name) => format!("{}: {}", name, self.issue),
             None => format!("{}", self.issue),
@@ -123,7 +123,7 @@ impl From<Option<Expression>> for ExprError {
 }
 
 impl ParserError for ExprError {
-    fn log_err(&self) -> String {
+    fn emit_err(&self) -> String {
         match &self.expr {
             Some(expr) => format!("{} Failed to parse expression", expr),
             None => "Expression did not close properly".into(),
@@ -142,7 +142,7 @@ impl From<Token> for ExpectedIdent {
 }
 
 impl ParserError for ExpectedIdent {
-    fn log_err(&self) -> String {
+    fn emit_err(&self) -> String {
         format!("Expected an identifier, received {}", self.found)
     }
 }
@@ -164,7 +164,7 @@ impl ExpectedNumber {
 }
 
 impl ParserError for ExpectedNumber {
-    fn log_err(&self) -> String {
+    fn emit_err(&self) -> String {
         let kind = match self.kind {
             NumKind::Int => "an integer",
             NumKind::Float => "a character",
@@ -190,7 +190,7 @@ impl From<UnterminatedKind> for UnterminatedLiteral {
 }
 
 impl ParserError for UnterminatedLiteral {
-    fn log_err(&self) -> String {
+    fn emit_err(&self) -> String {
         match self.kind {
             UnterminatedKind::Char => "Unterminated character".into(),
             UnterminatedKind::Str => "Unterminated string".into(),
@@ -210,7 +210,7 @@ impl BadExpectations {
 }
 
 impl ParserError for BadExpectations {
-    fn log_err(&self) -> String {
+    fn emit_err(&self) -> String {
         format!("Expected {}, found {}", self.expected, self.got)
     }
 }

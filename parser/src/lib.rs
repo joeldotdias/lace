@@ -29,10 +29,8 @@ impl Parser {
     pub fn new(lexer: Lexer) -> Self {
         let mut parser = Self {
             lexer,
-            // curr_token: TokenKind::Illegal,
-            // peeked_token: TokenKind::Illegal,
-            curr_token: dummy_token(TokenKind::Illegal),
-            peeked_token: dummy_token(TokenKind::Illegal),
+            curr_token: dummy_token(TokenKind::Eof),
+            peeked_token: dummy_token(TokenKind::Eof),
             errors: Vec::new(),
         };
 
@@ -212,7 +210,7 @@ impl Parser {
 
     pub fn log_errors(&self) {
         self.errors.iter().for_each(|err| {
-            println!("{}", err.log_err());
+            println!("{}", err.emit_err());
         })
     }
 

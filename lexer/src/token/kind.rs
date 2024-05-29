@@ -99,7 +99,9 @@ pub enum TokenKind {
 
     /// Unknown or unrecognizable tokens.
     /// Includes emojis and other non ASCII characters.
-    Illegal,
+    Illegal {
+        ch: char,
+    },
 
     /// End of input
     Eof,
@@ -149,7 +151,7 @@ impl Display for TokenKind {
                 terminated: _,
             } => write!(f, "BlockComment {}", content),
             TokenKind::Eof => write!(f, "Eof"),
-            TokenKind::Illegal => write!(f, "Label"),
+            TokenKind::Illegal { ch } => write!(f, "Illegal({ch})"),
         }
     }
 }

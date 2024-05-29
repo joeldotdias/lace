@@ -6,20 +6,20 @@ mod tests;
 use token::{
     kind::{LiteralKind, TokenKind},
     span::Span,
-    Token,
+    Token, EOF_CHAR,
 };
 
 /// Iterator over the code
 /// Acts as a cursor over the input
 pub struct Lexer {
     /// input from the user as a vector of bytes
-    input: Vec<u8>,
+    input: Vec<char>,
     /// points to the current position
     position: usize,
     /// next position to be read
     read_position: usize,
     /// current character under examination as a byte
-    curr_ch: u8,
+    curr_ch: char,
     /// position of each line break
     line_breaks: Vec<usize>,
 }
@@ -34,10 +34,11 @@ impl Lexer {
                 .filter_map(|(ln, ch)| (ch == '\n').then_some(ln + 1)),
         );
         let mut lexer = Lexer {
-            input: input.into_bytes(),
+            // input: input.into_bytes(),
+            input: input.chars().collect(),
             position: 0,
             read_position: 0,
-            curr_ch: 0,
+            curr_ch: EOF_CHAR,
             line_breaks,
         };
 
@@ -79,78 +80,78 @@ impl Lexer {
 
     pub fn token_kind(&mut self) -> TokenKind {
         let token = match self.curr_ch {
-            b'{' => TokenKind::LCurly,
-            b'}' => TokenKind::RCurly,
-            b'(' => TokenKind::LParen,
-            b')' => TokenKind::RParen,
-            b'[' => TokenKind::LBracket,
-            b']' => TokenKind::RBracket,
-            b'.' => TokenKind::Dot,
-            b',' => TokenKind::Comma,
-            b':' => TokenKind::Colon,
-            b';' => TokenKind::Semicolon,
-            b'+' => TokenKind::Plus,
-            b'-' => TokenKind::Minus,
-            b'!' => {
-                if self.peek() == b'=' {
+            '{' => TokenKind::LCurly,
+            '}' => TokenKind::RCurly,
+            '(' => TokenKind::LParen,
+            ')' => TokenKind::RParen,
+            '[' => TokenKind::LBracket,
+            ']' => TokenKind::RBracket,
+            '.' => TokenKind::Dot,
+            ',' => TokenKind::Comma,
+            ':' => TokenKind::Colon,
+            ';' => TokenKind::Semicolon,
+            '+' => TokenKind::Plus,
+            '-' => TokenKind::Minus,
+            '!' => {
+                if self.peek() == '=' {
                     self.advance_byte();
                     TokenKind::NotEqual
                 } else {
                     TokenKind::Bang
                 }
             }
-            b'*' => TokenKind::Asterisk,
-            b'/' => {
-                if self.peek() == b'/' {
+            '*' => TokenKind::Asterisk,
+            '/' => {
+                if self.peek() == '/' {
                     self.read_line_comment()
-                } else if self.peek() == b'*' {
+                } else if self.peek() == '*' {
                     self.read_block_comment()
                 } else {
                     TokenKind::ForwardSlash
                 }
             }
-            b'%' => TokenKind::Modulo,
-            b'<' => {
-                if self.peek() == b'=' {
+            '%' => TokenKind::Modulo,
+            '<' => {
+                if self.peek() == '=' {
                     self.advance_byte();
                     TokenKind::LessThanEqual
                 } else {
                     TokenKind::LessThan
                 }
             }
-            b'>' => {
-                if self.peek() == b'=' {
+            '>' => {
+                if self.peek() == '=' {
                     self.advance_byte();
                     TokenKind::GreaterThanEqual
                 } else {
                     TokenKind::GreaterThan
                 }
             }
-            b'=' => {
-                if self.peek() == b'=' {
+            '=' => {
+                if self.peek() == '=' {
                     self.advance_byte();
                     TokenKind::Equal
                 } else {
                     TokenKind::Assign
                 }
             }
-            b'|' => {
-                if self.peek() == b'|' {
+            '|' => {
+                if self.peek() == '|' {
                     self.advance_byte();
                     TokenKind::Or
                 } else {
-                    TokenKind::Illegal
+                    TokenKind::Illegal { ch: self.curr_ch }
                 }
             }
-            b'&' => {
-                if self.peek() == b'&' {
+            '&' => {
+                if self.peek() == '&' {
                     self.advance_byte();
                     TokenKind::And
                 } else {
-                    TokenKind::Illegal
+                    TokenKind::Illegal { ch: self.curr_ch }
                 }
             }
-            b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
+            'a'..='z' | 'A'..='Z' | '_' => {
                 let label = self.read_ident();
 
                 return match TokenKind::try_keyword(&label) {
@@ -158,17 +159,17 @@ impl Lexer {
                     None => TokenKind::Ident { label },
                 };
             }
-            b'0'..=b'9' => {
+            '0'..='9' => {
                 return self.read_int();
             }
-            b'\'' => {
+            '\'' => {
                 return self.read_char();
             }
-            b'"' => {
+            '"' => {
                 return self.read_str();
             }
-            0 => TokenKind::Eof,
-            _ => TokenKind::Illegal,
+            EOF_CHAR => TokenKind::Eof,
+            _ => TokenKind::Illegal { ch: self.curr_ch },
         };
 
         self.advance_byte();
@@ -188,18 +189,18 @@ impl Lexer {
         }
     }
 
-    fn peek(&self) -> u8 {
+    fn peek(&self) -> char {
         if self.reached_end_of_input() {
-            0
+            EOF_CHAR
         } else {
             self.input[self.read_position]
         }
     }
 
     // peeks 2 bytes ahead
-    fn peek_peek(&self) -> u8 {
+    fn peek_peek(&self) -> char {
         if self.read_position >= self.input.len() - 1 {
-            0
+            EOF_CHAR
         } else {
             self.input[self.read_position + 1]
         }
@@ -207,7 +208,7 @@ impl Lexer {
 
     fn advance_byte(&mut self) {
         if self.reached_end_of_input() {
-            self.curr_ch = 0; // set ch to 0 if we reach end of input
+            self.curr_ch = EOF_CHAR;
         } else {
             self.curr_ch = self.input[self.read_position];
         }
@@ -219,22 +220,21 @@ impl Lexer {
         let pos = self.position;
 
         while self.curr_ch.is_ascii_alphabetic()
-            || self.curr_ch == b'_'
+            || self.curr_ch == '_'
             || self.curr_ch.is_ascii_digit()
         {
             self.advance_byte();
         }
 
-        // because we only support ASCII characters
-        String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
+        self.input[pos..self.position].iter().collect::<String>()
     }
 
     fn read_int(&mut self) -> TokenKind {
         let pos = self.position;
         let mut dot = false;
 
-        while self.curr_ch.is_ascii_digit() || self.curr_ch == b'.' {
-            if self.curr_ch == b'.' {
+        while self.curr_ch.is_ascii_digit() || self.curr_ch == '.' {
+            if self.curr_ch == '.' {
                 dot = true;
             }
             self.advance_byte();
@@ -248,7 +248,7 @@ impl Lexer {
 
         TokenKind::Literal {
             kind,
-            val: String::from_utf8_lossy(&self.input[pos..self.position]).to_string(),
+            val: self.input[pos..self.position].iter().collect::<String>(),
         }
     }
 
@@ -258,14 +258,14 @@ impl Lexer {
         let mut estr = String::new();
         let mut terminated = true;
 
-        while self.curr_ch != b'"' {
-            if self.curr_ch == b'\\' {
+        while self.curr_ch != '"' {
+            if self.curr_ch == '\\' {
                 // if a backslash is found we skip it
                 // and read the next character as is
                 self.advance_byte();
             }
 
-            estr.push(self.curr_ch.into());
+            estr.push(self.curr_ch);
             self.advance_byte();
 
             if self.reached_end_of_input() {
@@ -288,10 +288,10 @@ impl Lexer {
         self.advance_byte();
 
         let mut val = String::new();
-        val.push(self.curr_ch.into());
+        val.push(self.curr_ch);
         self.advance_byte();
 
-        let terminated = self.curr_ch == b'\'';
+        let terminated = self.curr_ch == '\'';
         if terminated {
             self.advance_byte();
         }
@@ -309,11 +309,11 @@ impl Lexer {
 
         let pos = self.position;
 
-        while self.curr_ch != b'\n' && !self.reached_end_of_input() {
+        while self.curr_ch != '\n' && !self.reached_end_of_input() {
             self.advance_byte();
         }
 
-        let cm_str = String::from_utf8_lossy(&self.input[pos..self.position]).to_string();
+        let cm_str = self.input[pos..self.position].iter().collect::<String>();
 
         self.advance_byte();
 
@@ -328,7 +328,7 @@ impl Lexer {
         let pos = self.position;
         let mut terminated = true;
 
-        while self.peek() != b'*' || self.peek_peek() != b'/' {
+        while self.peek() != '*' || self.peek_peek() != '/' {
             if self.reached_end_of_input() {
                 terminated = false;
                 break;
@@ -337,7 +337,9 @@ impl Lexer {
             self.advance_byte();
         }
 
-        let cm_str = String::from_utf8_lossy(&self.input[pos..self.position + 1]).to_string();
+        let cm_str = self.input[pos..self.position + 1]
+            .iter()
+            .collect::<String>();
 
         self.advance_byte();
 

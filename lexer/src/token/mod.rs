@@ -6,6 +6,8 @@ use std::fmt::Display;
 use kind::TokenKind;
 use span::{dummy_span, Span};
 
+pub(crate) const EOF_CHAR: char = '\0';
+
 #[derive(Clone, Debug)]
 pub struct Token {
     pub kind: TokenKind,
@@ -20,7 +22,13 @@ impl Display for Token {
 
 impl PartialEq for Token {
     fn eq(&self, other: &Self) -> bool {
-        self.kind() == other.kind()
+        if let (TokenKind::Illegal { ch: _ }, TokenKind::Illegal { ch: _ }) =
+            (self.kind(), other.kind())
+        {
+            true
+        } else {
+            self.kind() == other.kind()
+        }
     }
 }
 impl Eq for Token {}

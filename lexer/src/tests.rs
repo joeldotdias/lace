@@ -515,14 +515,21 @@ fn detect_unterminated_string() {
 
 #[test]
 fn detect_illegal() {
-    let input = "]+!Γ¡É≡ƒÜª";
+    let input = "]+!Γ¡É≡ƒÜª);";
 
     let tokens = vec![
         TokenKind::RBracket,
         TokenKind::Plus,
         TokenKind::Bang,
-        TokenKind::Illegal,
-        TokenKind::Illegal,
+        TokenKind::Illegal { ch: 'Γ' },
+        TokenKind::Illegal { ch: '¡' },
+        TokenKind::Illegal { ch: 'É' },
+        TokenKind::Illegal { ch: '≡' },
+        TokenKind::Illegal { ch: 'ƒ' },
+        TokenKind::Illegal { ch: 'Ü' },
+        TokenKind::Illegal { ch: 'ª' },
+        TokenKind::RParen,
+        TokenKind::Semicolon,
     ];
 
     validate_tokens(input, tokens)

@@ -1,6 +1,7 @@
 pub mod kind;
 pub mod span;
 
+use core::panic;
 use std::fmt::Display;
 
 use kind::TokenKind;
@@ -40,6 +41,19 @@ impl Token {
 
     pub fn reached_eof(&self) -> bool {
         self.kind == TokenKind::Eof
+    }
+
+    pub fn is_actually_legal(&self) -> bool {
+        matches!(
+            self.kind,
+            TokenKind::LBracket
+                | TokenKind::RBracket
+                | TokenKind::LParen
+                | TokenKind::RParen
+                | TokenKind::LCurly
+                | TokenKind::RCurly
+                | TokenKind::Semicolon
+        )
     }
 }
 

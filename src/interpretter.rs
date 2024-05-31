@@ -24,9 +24,7 @@ pub fn run_interpreter(source: PathBuf) -> Result<(), String> {
         let mut evaluator = Eval::new();
         evaluator.eval(program);
     } else {
-        parser.errors.iter().for_each(|e| {
-            println!("{}", e.emit_err());
-        })
+        parser.log_errors();
     }
 
     Ok(())

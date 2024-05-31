@@ -10,6 +10,10 @@ pub struct Span {
 
 impl Display for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.end_col < 1 {
+            return write!(f, "EOF");
+        }
+
         let range = if self.start_col == self.end_col - 1 {
             format!("{}", self.start_col + 1)
         } else {
@@ -22,7 +26,7 @@ impl Display for Span {
             format!("lines {} to {}", self.start_line, self.end_line)
         };
 
-        write!(f, "{} on {}", range, lines)
+        write!(f, "{range} on {lines}")
     }
 }
 

@@ -13,15 +13,15 @@ use token::{
 /// Acts as a cursor over the input
 pub struct Lexer {
     /// input from the user as a vector of characters
-    input: Vec<char>,
+    pub input: Vec<char>,
     /// points to the current position
-    position: usize,
+    pub position: usize,
     /// next position to be read
     read_position: usize,
     /// current character under examination as a byte
     curr_ch: char,
     /// position of each line break
-    line_breaks: Vec<usize>,
+    pub line_breaks: Vec<usize>,
 }
 
 impl Lexer {
@@ -34,7 +34,6 @@ impl Lexer {
                 .filter_map(|(ln, ch)| (ch == '\n').then_some(ln + 1)),
         );
         let mut lexer = Lexer {
-            // input: input.into_bytes(),
             input: input.chars().collect(),
             position: 0,
             read_position: 0,
@@ -183,10 +182,11 @@ impl Lexer {
 
         let kind = self.token_kind();
 
-        Token {
+        let tok = Token {
             kind,
             span: self.make_span(start),
-        }
+        };
+        tok
     }
 
     fn peek(&self) -> char {
@@ -337,7 +337,7 @@ impl Lexer {
             self.advance_byte();
         }
 
-        let cm_str = self.input[pos..self.position + 1]
+        let cm_str = self.input[pos..self.read_position]
             .iter()
             .collect::<String>();
 
@@ -349,6 +349,10 @@ impl Lexer {
         }
     }
 
+    // pub fn get_snippet(&mut self, start_line: usize, end_line: usize) {
+    //     println!("{start_line} {end_line}");
+    // }
+
     fn skip_whitespace(&mut self) {
         while self.curr_ch.is_ascii_whitespace() {
             self.advance_byte();
@@ -357,5 +361,24 @@ impl Lexer {
 
     fn reached_end_of_input(&self) -> bool {
         self.read_position >= self.input.len()
+    }
+
+    pub fn curr_pos(&self) -> Span {
+        self.make_span(self.position)
+    }
+
+    pub fn curr_col(&self) -> usize {
+        let pos = self.position;
+        let end_line = match self
+            .line_breaks
+            .iter()
+            .enumerate()
+            .find_map(|(ln, &ch)| (ch + 1 > pos).then_some(ln))
+        {
+            Some(n) => n,
+            None => self.line_breaks.len(),
+        };
+
+        pos - self.line_breaks[end_line - 1]
     }
 }

@@ -3,7 +3,7 @@ use std::{fmt::Display, path::PathBuf};
 use lace_lexer::token::{dummy_token, kind::TokenKind};
 
 use crate::{
-    ast::{nodes::IdentNode, Expression},
+    ast::{nodes::IdentNode, ExpressionKind},
     Parser,
 };
 
@@ -11,7 +11,7 @@ use crate::{
 pub enum Statement {
     Assignment(LetStatement),
     Return(ReturnStatement),
-    Expr(Expression),
+    Expression(ExpressionKind),
     Source(SourceStatement),
 }
 
@@ -20,7 +20,7 @@ impl Display for Statement {
         match self {
             Statement::Assignment(statement) => write!(f, "{}", statement),
             Statement::Return(statement) => write!(f, "{}", statement),
-            Statement::Expr(expression) => write!(f, "{}", expression),
+            Statement::Expression(expression) => write!(f, "{}", expression),
             Statement::Source(source) => write!(f, "{}", source),
         }
     }
@@ -29,7 +29,7 @@ impl Display for Statement {
 #[derive(PartialEq, Debug, Clone)]
 pub struct LetStatement {
     pub name: IdentNode,
-    pub val: Expression,
+    pub val: ExpressionKind,
 }
 
 impl Display for LetStatement {
@@ -40,7 +40,7 @@ impl Display for LetStatement {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct ReturnStatement {
-    pub returnable: Expression,
+    pub returnable: ExpressionKind,
 }
 
 impl Display for ReturnStatement {

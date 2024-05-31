@@ -4,11 +4,12 @@ use std::fmt::Display;
 use lace_lexer::token::{
     dummy_token,
     kind::{LiteralKind, TokenKind},
+    span::Span,
     Token,
 };
 
 use crate::{
-    ast::{statement::BlockStatement, Expression, Precedence},
+    ast::{statement::BlockStatement, ExpressionKind, Precedence},
     errors::{
         CondIssue, ExpectedIdent, ExpectedNumber, FuncError, FuncIssue, IncompleteConditional,
         NoPrefixParser, NumKind, ParserError, UnterminatedKind, UnterminatedLiteral,
@@ -102,7 +103,9 @@ impl PrimitiveNode {
             }
             TokenKind::True => Ok(PrimitiveNode::BooleanLiteral(true)),
             TokenKind::False => Ok(PrimitiveNode::BooleanLiteral(false)),
-            _ => Err(Box::new(NoPrefixParser::from(parser.curr_token.clone()))),
+            _ => Err(Box::new(NoPrefixParser {
+                token: parser.curr_token.clone(),
+            })),
         }
     }
 }
@@ -110,7 +113,7 @@ impl PrimitiveNode {
 #[derive(PartialEq, Debug, Clone)]
 pub struct PrefixOperator {
     pub operator: Token,
-    pub right_expr: Box<Expression>,
+    pub right_expr: Box<ExpressionKind>,
 }
 
 impl Display for PrefixOperator {
@@ -120,7 +123,7 @@ impl Display for PrefixOperator {
 }
 
 impl PrefixOperator {
-    pub fn new(token: Token, right: Expression) -> Self {
+    pub fn new(token: Token, right: ExpressionKind) -> Self {
         Self {
             operator: token,
             right_expr: Box::new(right),
@@ -130,7 +133,7 @@ impl PrefixOperator {
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
         let token = parser.curr_token.clone();
         parser.next_token();
-        let right = Expression::parse(parser, Precedence::Prefix)?;
+        let right = ExpressionKind::parse(parser, Precedence::Prefix)?;
 
         Ok(PrefixOperator::new(token, right))
     }
@@ -139,8 +142,8 @@ impl PrefixOperator {
 #[derive(PartialEq, Debug, Clone)]
 pub struct InfixOperator {
     pub operator: Token,
-    pub left_expr: Box<Expression>,
-    pub right_expr: Box<Expression>,
+    pub left_expr: Box<ExpressionKind>,
+    pub right_expr: Box<ExpressionKind>,
 }
 
 impl Display for InfixOperator {
@@ -154,7 +157,7 @@ impl Display for InfixOperator {
 }
 
 impl InfixOperator {
-    pub fn new(token: Token, left_expr: Expression, right_expr: Expression) -> Self {
+    pub fn new(token: Token, left_expr: ExpressionKind, right_expr: ExpressionKind) -> Self {
         Self {
             operator: token,
             left_expr: Box::new(left_expr),
@@ -162,13 +165,16 @@ impl InfixOperator {
         }
     }
 
-    pub fn parse(parser: &mut Parser, left_expr: Expression) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(
+        parser: &mut Parser,
+        left_expr: ExpressionKind,
+    ) -> Result<Self, Box<dyn ParserError>> {
         let token = parser.curr_token.clone();
         let precedence = parser.curr_precedence();
 
         parser.next_token();
 
-        let right_expr = Expression::parse(parser, precedence)?;
+        let right_expr = ExpressionKind::parse(parser, precedence)?;
 
         Ok(InfixOperator::new(token, left_expr, right_expr))
     }
@@ -176,7 +182,7 @@ impl InfixOperator {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct ConditionalOperator {
-    pub cond: Box<Expression>,
+    pub cond: Box<ExpressionKind>,
     pub consequence: BlockStatement,
     pub alternative: Option<BlockStatement>,
 }
@@ -200,27 +206,34 @@ impl Display for ConditionalOperator {
 
 impl ConditionalOperator {
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+        let start_pos = parser.lexer.curr_pos();
         if !parser.expect_peek(&dummy_token(TokenKind::LParen)) {
             return Err(Box::new(IncompleteConditional::new(
-                None,
+                start_pos,
                 CondIssue::ExprIncorrectlyOpened,
+                None,
+                parser.lexer.curr_col(),
             )));
         }
 
         parser.next_token();
-        let cond = Expression::parse(parser, Precedence::Lowest)?;
+        let cond = ExpressionKind::parse(parser, Precedence::Lowest)?;
 
         if !parser.expect_peek(&dummy_token(TokenKind::RParen)) {
             return Err(Box::new(IncompleteConditional::new(
-                None,
+                start_pos,
                 CondIssue::ExprIncorrectlyClosed,
+                Some(parser.lexer.curr_pos()),
+                parser.lexer.curr_col() - 1,
             )));
         }
 
         if !parser.expect_peek(&dummy_token(TokenKind::LCurly)) {
             return Err(Box::new(IncompleteConditional::new(
-                None,
+                start_pos,
                 CondIssue::BodyIncorrectlyOpened,
+                Some(parser.lexer.curr_pos()),
+                parser.lexer.curr_col(),
             )));
         }
 
@@ -231,8 +244,10 @@ impl ConditionalOperator {
             parser.next_token();
             if !parser.expect_peek(&dummy_token(TokenKind::LCurly)) {
                 return Err(Box::new(IncompleteConditional::new(
-                    None,
+                    start_pos,
                     CondIssue::ExpectedElse,
+                    Some(parser.lexer.curr_pos()),
+                    parser.lexer.curr_col(),
                 )));
             }
 
@@ -278,18 +293,26 @@ impl Display for FunctionLiteral {
 
 impl FunctionLiteral {
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+        let start_pos = parser.lexer.curr_pos();
         let name = Self::parse_function_name(parser);
 
         if !parser.expect_peek(&dummy_token(TokenKind::LParen)) {
-            return Err(Box::new(FuncError::new(None, FuncIssue::FuncMissingParens)));
+            return Err(Box::new(FuncError::new(
+                start_pos,
+                FuncIssue::FuncMissingParens,
+                None,
+                parser.lexer.curr_col(),
+            )));
         }
 
-        let params = Self::parse_function_params(parser)?;
+        let params = Self::parse_function_params(parser, &start_pos)?;
 
         if !parser.expect_peek(&dummy_token(TokenKind::LCurly)) {
             return Err(Box::new(FuncError::new(
-                None,
+                start_pos,
                 FuncIssue::BodyIncorrectlyOpened,
+                Some(parser.lexer.curr_pos()),
+                parser.lexer.curr_col(),
             )));
         }
 
@@ -309,7 +332,10 @@ impl FunctionLiteral {
         name
     }
 
-    fn parse_function_params(parser: &mut Parser) -> Result<Vec<IdentNode>, Box<dyn ParserError>> {
+    fn parse_function_params(
+        parser: &mut Parser,
+        start: &Span,
+    ) -> Result<Vec<IdentNode>, Box<dyn ParserError>> {
         let mut idents = Vec::<IdentNode>::new();
 
         if parser.peek_token_is(&TokenKind::RParen) {
@@ -332,8 +358,10 @@ impl FunctionLiteral {
 
         if !parser.expect_peek(&dummy_token(TokenKind::RParen)) {
             return Err(Box::new(FuncError::new(
-                None,
+                start.clone(),
                 FuncIssue::BodyIncorrectlyClosed,
+                Some(parser.lexer.curr_pos()),
+                parser.lexer.curr_col(),
             )));
         }
 
@@ -343,8 +371,8 @@ impl FunctionLiteral {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCall {
-    pub function: Box<Expression>,
-    pub args: Vec<Expression>,
+    pub function: Box<ExpressionKind>,
+    pub args: Vec<ExpressionKind>,
 }
 
 impl Display for FunctionCall {
@@ -361,8 +389,11 @@ impl Display for FunctionCall {
 }
 
 impl FunctionCall {
-    pub fn parse(parser: &mut Parser, function: Expression) -> Result<Self, Box<dyn ParserError>> {
-        let args = Expression::parse_expr_list(parser, &dummy_token(TokenKind::RParen))?;
+    pub fn parse(
+        parser: &mut Parser,
+        function: ExpressionKind,
+    ) -> Result<Self, Box<dyn ParserError>> {
+        let args = ExpressionKind::parse_expr_list(parser, &dummy_token(TokenKind::RParen))?;
 
         Ok(FunctionCall {
             function: Box::new(function),
@@ -373,7 +404,7 @@ impl FunctionCall {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct ArrayLiteral {
-    pub elements: Vec<Expression>,
+    pub elements: Vec<ExpressionKind>,
 }
 
 impl Display for ArrayLiteral {
@@ -390,15 +421,15 @@ impl Display for ArrayLiteral {
 
 impl ArrayLiteral {
     pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
-        let elements = Expression::parse_expr_list(parser, &dummy_token(TokenKind::RBracket))?;
+        let elements = ExpressionKind::parse_expr_list(parser, &dummy_token(TokenKind::RBracket))?;
         Ok(Self { elements })
     }
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct IndexAccess {
-    pub arr: Box<Expression>,
-    pub index: Box<Expression>,
+    pub arr: Box<ExpressionKind>,
+    pub index: Box<ExpressionKind>,
 }
 
 impl Display for IndexAccess {
@@ -407,15 +438,18 @@ impl Display for IndexAccess {
     }
 }
 impl IndexAccess {
-    pub fn parse(parser: &mut Parser, left_expr: Expression) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(
+        parser: &mut Parser,
+        left_expr: ExpressionKind,
+    ) -> Result<Self, Box<dyn ParserError>> {
         parser.next_token();
-        let index = Expression::parse(parser, Precedence::Lowest)?;
+        let index = ExpressionKind::parse(parser, Precedence::Lowest)?;
         if !parser.expect_peek(&dummy_token(TokenKind::RBracket)) {
             // TODO: this does not belong here. Change it
-            return Err(Box::new(FuncError::new(
-                None,
-                FuncIssue::BodyIncorrectlyClosed,
-            )));
+            // return Err(Box::new(FuncError::new(
+            //     None,
+            //     FuncIssue::BodyIncorrectlyClosed,
+            // )));
         }
 
         Ok(IndexAccess {
@@ -427,7 +461,7 @@ impl IndexAccess {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct HashLiteral {
-    pub pairs: Vec<(Expression, Expression)>,
+    pub pairs: Vec<(ExpressionKind, ExpressionKind)>,
 }
 
 impl Display for HashLiteral {
@@ -448,17 +482,17 @@ impl HashLiteral {
 
         while !parser.peek_token_is(&TokenKind::RCurly) {
             parser.next_token();
-            let key = Expression::parse(parser, Precedence::Lowest)?;
+            let key = ExpressionKind::parse(parser, Precedence::Lowest)?;
             if !parser.expect_peek(&dummy_token(TokenKind::Colon)) {
                 // TODO: this does not belong here. Change it
-                return Err(Box::new(FuncError::new(
-                    None,
-                    FuncIssue::BodyIncorrectlyClosed,
-                )));
+                // return Err(Box::new(FuncError::new(
+                //     None,
+                //     FuncIssue::BodyIncorrectlyClosed,
+                // )));
             }
 
             parser.next_token();
-            let val = Expression::parse(parser, Precedence::Lowest)?;
+            let val = ExpressionKind::parse(parser, Precedence::Lowest)?;
 
             pairs.push((key, val));
 
@@ -466,18 +500,18 @@ impl HashLiteral {
                 && !parser.expect_peek(&dummy_token(TokenKind::Comma))
             {
                 // TODO: this does not belong here. Change it
-                return Err(Box::new(FuncError::new(
-                    None,
-                    FuncIssue::BodyIncorrectlyClosed,
-                )));
+                // return Err(Box::new(FuncError::new(
+                //     None,
+                //     FuncIssue::BodyIncorrectlyClosed,
+                // )));
             }
         }
 
         if !parser.expect_peek(&dummy_token(TokenKind::RCurly)) {
-            return Err(Box::new(FuncError::new(
-                None,
-                FuncIssue::BodyIncorrectlyClosed,
-            )));
+            // return Err(Box::new(FuncError::new(
+            //     None,
+            //     FuncIssue::BodyIncorrectlyClosed,
+            // )));
         }
 
         Ok(HashLiteral { pairs })

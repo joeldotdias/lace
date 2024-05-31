@@ -1,30 +1,53 @@
-use std::fmt::Display;
+use std::{fmt::Display, usize};
 
-use lace_lexer::token::Token;
+use lace_lexer::token::{span::Span, Token};
 
-use crate::ast::Expression;
+use crate::ast::ExpressionKind;
 
 // TODO: Make this more detailed. I have no idea how at this moment
 pub trait ParserError {
     fn emit_err(&self) -> String;
-}
-
-pub struct NoPrefixParser {
-    token: Token,
-}
-
-impl From<Token> for NoPrefixParser {
-    fn from(value: Token) -> Self {
-        Self { token: value }
+    fn range(&self) -> (usize, usize) {
+        (0, 0)
+    }
+    fn width(&self) -> (usize, usize) {
+        (0, 0)
+    }
+    fn err_head(&self) -> String {
+        "".into()
+    }
+    fn check_false_illegal(&self) -> bool {
+        false
     }
 }
 
+pub struct NoPrefixParser {
+    pub token: Token,
+}
+
 impl ParserError for NoPrefixParser {
-    fn emit_err(&self) -> String {
+    fn err_head(&self) -> String {
         format!(
-            "At {}:{} => No prefix parser found for {}",
-            self.token.span.start_line, self.token.span.start_col, self.token.kind
+            "\x1b[94m--> At {}:{}\x1b[0m",
+            self.token.span.start_line,
+            self.token.span.start_col + 1
         )
+    }
+
+    fn emit_err(&self) -> String {
+        format!("\tEncountered an illegal token {}", self.token.kind)
+    }
+
+    fn range(&self) -> (usize, usize) {
+        (self.token.span.start_line, self.token.span.end_line)
+    }
+
+    fn width(&self) -> (usize, usize) {
+        (self.token.span.start_col, self.token.span.end_col)
+    }
+
+    fn check_false_illegal(&self) -> bool {
+        self.token.is_actually_legal()
     }
 }
 
@@ -39,38 +62,86 @@ impl Display for CondIssue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CondIssue::ExprIncorrectlyOpened => {
-                write!(f, "Conditional expression didn't open properly")
+                write!(
+                    f,
+                    "Conditional expression didn't open properly. Expected '('"
+                )
             }
             CondIssue::ExprIncorrectlyClosed => {
-                write!(f, "Condtional expression didn't close properly")
+                write!(
+                    f,
+                    "Condtional expression didn't close properly. Expected ')'"
+                )
             }
             CondIssue::BodyIncorrectlyOpened => {
-                write!(f, "Body of conditonal expression didn't open properly")
+                write!(
+                    f,
+                    "Body of conditonal expression didn't open properly. Expected '{{'"
+                )
             }
             CondIssue::ExpectedElse => {
-                write!(f, "Expected an Else block for this conditional expression")
+                write!(f, "Expected an Else block for this conditional expression.")
             }
         }
     }
 }
 
 pub struct IncompleteConditional {
-    expr: Option<Expression>,
+    pub start: Span,
     issue: CondIssue,
+    pub end: Option<Span>,
+    pub current: usize,
 }
 
 impl IncompleteConditional {
-    pub fn new(expr: Option<Expression>, issue: CondIssue) -> Self {
-        Self { expr, issue }
+    pub fn new(start: Span, issue: CondIssue, end: Option<Span>, current: usize) -> Self {
+        Self {
+            start,
+            issue,
+            end,
+            current,
+        }
     }
+}
+
+macro_rules! check_end_line {
+    ($e:expr) => {
+        match &$e.end {
+            Some(ln) => ln.end_line,
+            None => $e.start.end_line,
+        }
+    };
+}
+
+macro_rules! check_end_col {
+    ($e:expr) => {
+        match &$e.end {
+            Some(ln) => ln.end_col,
+            None => $e.start.end_col,
+        }
+    };
 }
 
 impl ParserError for IncompleteConditional {
     fn emit_err(&self) -> String {
-        match &self.expr {
-            Some(expr) => format!("{}: {}", expr, self.issue),
-            None => format!("{}", self.issue),
+        format!("\t{}", self.issue)
+    }
+
+    fn range(&self) -> (usize, usize) {
+        (self.start.start_line, check_end_line!(&self))
+    }
+
+    fn width(&self) -> (usize, usize) {
+        match self.issue {
+            CondIssue::ExprIncorrectlyOpened => (self.start.start_col - 1, check_end_col!(&self)),
+            CondIssue::ExprIncorrectlyClosed => (self.start.start_col, check_end_col!(&self)),
+            CondIssue::BodyIncorrectlyOpened => (self.start.start_col - 1, check_end_col!(&self)),
+            CondIssue::ExpectedElse => (self.start.start_col - 1, check_end_col!(&self)),
         }
+    }
+
+    fn err_head(&self) -> String {
+        format!("\x1b[94m--> At {}:{}\x1b[0m", self.range().1, self.current,)
     }
 }
 
@@ -93,31 +164,53 @@ impl Display for FuncIssue {
 }
 
 pub struct FuncError {
-    func_name: Option<String>,
+    pub start: Span,
     issue: FuncIssue,
+    pub end: Option<Span>,
+    pub current: usize,
 }
 
 impl FuncError {
-    pub fn new(func_name: Option<String>, issue: FuncIssue) -> Self {
-        Self { func_name, issue }
+    pub fn new(start: Span, issue: FuncIssue, end: Option<Span>, current: usize) -> Self {
+        Self {
+            start,
+            issue,
+            end,
+            current,
+        }
     }
 }
 
 impl ParserError for FuncError {
     fn emit_err(&self) -> String {
-        match &self.func_name {
-            Some(name) => format!("{}: {}", name, self.issue),
-            None => format!("{}", self.issue),
+        format!("\t{}", self.issue)
+    }
+
+    fn range(&self) -> (usize, usize) {
+        (self.start.start_line, check_end_line!(&self))
+    }
+
+    fn width(&self) -> (usize, usize) {
+        match self.issue {
+            FuncIssue::FuncMissingParens => (self.start.start_col - 1, check_end_col!(&self)),
+            FuncIssue::BodyIncorrectlyOpened => {
+                (self.start.start_col - 1, check_end_col!(&self) + 3)
+            }
+            FuncIssue::BodyIncorrectlyClosed => (self.start.start_col - 1, check_end_col!(&self)),
         }
+    }
+
+    fn err_head(&self) -> String {
+        format!("\x1b[94m--> At {}:{}\x1b[0m", self.range().1, self.current,)
     }
 }
 
 pub struct ExprError {
-    expr: Option<Expression>,
+    expr: Option<ExpressionKind>,
 }
 
-impl From<Option<Expression>> for ExprError {
-    fn from(value: Option<Expression>) -> Self {
+impl From<Option<ExpressionKind>> for ExprError {
+    fn from(value: Option<ExpressionKind>) -> Self {
         Self { expr: value }
     }
 }

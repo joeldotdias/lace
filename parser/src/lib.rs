@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, u32};
 
 use errors::{BadExpectations, ParserError};
 use lace_lexer::{
@@ -9,7 +9,7 @@ use lace_lexer::{
 use crate::ast::{
     nodes::IdentNode,
     statement::{LetStatement, ReturnStatement, SourceStatement, Statement},
-    Expression, Precedence, Program,
+    ExpressionKind, Precedence, Program,
 };
 
 pub mod ast;
@@ -64,7 +64,7 @@ impl Parser {
             TokenKind::Let => self.parse_let().map(Statement::Assignment),
             TokenKind::Return => self.parse_return().map(Statement::Return),
             TokenKind::Source => self.parse_source().map(Statement::Source),
-            _ => self.parse_expression().map(Statement::Expr),
+            _ => self.parse_expression().map(Statement::Expression),
         }
     }
 
@@ -89,7 +89,7 @@ impl Parser {
 
         self.next_token();
 
-        let mut val = match Expression::parse(self, Precedence::Lowest) {
+        let mut val = match ExpressionKind::parse(self, Precedence::Lowest) {
             Ok(val) => val,
             Err(err) => {
                 self.found_err(err);
@@ -97,7 +97,7 @@ impl Parser {
             }
         };
 
-        if let Expression::FunctionDef(literal) = &mut val {
+        if let ExpressionKind::FunctionDef(literal) = &mut val {
             literal.name = Some(name.token.to_string());
         };
 
@@ -111,7 +111,7 @@ impl Parser {
     fn parse_return(&mut self) -> Option<ReturnStatement> {
         self.next_token();
 
-        let return_val = match Expression::parse(self, Precedence::Lowest) {
+        let return_val = match ExpressionKind::parse(self, Precedence::Lowest) {
             Ok(val) => val,
             Err(err) => {
                 self.found_err(err);
@@ -131,9 +131,9 @@ impl Parser {
     fn parse_source(&mut self) -> Option<SourceStatement> {
         self.next_token();
 
-        let sourceable = match Expression::parse(self, Precedence::Lowest) {
+        let sourceable = match ExpressionKind::parse(self, Precedence::Lowest) {
             Ok(e) => match e {
-                Expression::Primitive(p) => match p {
+                ExpressionKind::Primitive(p) => match p {
                     ast::nodes::PrimitiveNode::IntegerLiteral(_) => todo!(),
                     ast::nodes::PrimitiveNode::FloatLiteral(_) => todo!(),
                     ast::nodes::PrimitiveNode::CharLiteral(_) => todo!(),
@@ -157,8 +157,8 @@ impl Parser {
         Some(SourceStatement { path })
     }
 
-    fn parse_expression(&mut self) -> Option<Expression> {
-        let expr = Expression::parse(self, Precedence::Lowest);
+    fn parse_expression(&mut self) -> Option<ExpressionKind> {
+        let expr = ExpressionKind::parse(self, Precedence::Lowest);
 
         if self.peek_token_is(&TokenKind::Semicolon) {
             self.next_token();
@@ -210,7 +210,43 @@ impl Parser {
 
     pub fn log_errors(&self) {
         self.errors.iter().for_each(|err| {
-            println!("{}", err.emit_err());
+            if !err.check_false_illegal() {
+                let header = err.err_head();
+                let (sline, eline) = err.range();
+                if sline == 0 {
+                    return;
+                }
+                let (schar, echar) = err.width();
+                let prn = (&self.lexer.input
+                    [(self.lexer.line_breaks[sline - 1])..(self.lexer.line_breaks[eline] - 1)])
+                    .iter()
+                    .collect::<String>();
+                let width = prn.len();
+                let mut ptrln = String::new();
+                for _ in 0..schar {
+                    ptrln.push(' ');
+                }
+                for _ in schar..echar {
+                    ptrln.push('^');
+                }
+                for _ in (echar)..width {
+                    ptrln.push(' ');
+                }
+                let mut curr_line = sline;
+                let num_len = eline.checked_ilog10().unwrap_or(0) + 1;
+
+                println!("{header}");
+                println!("{: <1$}\x1b[94m | \x1b[0m", "", num_len as usize);
+                prn.lines().for_each(|line| {
+                    println!("\x1b[94m{curr_line} |\x1b[0m\t{line}");
+                    curr_line += 1;
+                });
+                println!(
+                    "{: <1$}\x1b[94m | \x1b[0m\t\x1b[91m{ptrln}\x1b[0m",
+                    "", num_len as usize
+                );
+                println!("{}", err.emit_err());
+            }
         })
     }
 

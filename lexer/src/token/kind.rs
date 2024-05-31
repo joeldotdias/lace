@@ -111,7 +111,7 @@ impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             TokenKind::Ident { label } => write!(f, "Ident({label})"),
-            TokenKind::Literal { kind, val } => write!(f, "{} Literal({})", kind, val),
+            TokenKind::Literal { kind, val } => write!(f, "{kind} Literal({val})"),
             TokenKind::Assign => write!(f, "Assign"),
             TokenKind::Bang => write!(f, "Bang"),
             TokenKind::Minus => write!(f, "Minus"),
@@ -145,13 +145,13 @@ impl Display for TokenKind {
             TokenKind::Else => write!(f, "Else"),
             TokenKind::True => write!(f, "True"),
             TokenKind::False => write!(f, "False"),
-            TokenKind::LineComment { content } => write!(f, "LineComment {}", content),
+            TokenKind::LineComment { content } => write!(f, "LineComment {content}"),
             TokenKind::BlockComment {
                 content,
                 terminated: _,
-            } => write!(f, "BlockComment {}", content),
+            } => write!(f, "BlockComment {content}"),
             TokenKind::Eof => write!(f, "Eof"),
-            TokenKind::Illegal { ch } => write!(f, "Illegal({ch})"),
+            TokenKind::Illegal { ch } => write!(f, "{ch}"),
         }
     }
 }

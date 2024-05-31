@@ -37,6 +37,7 @@ impl IdentNode {
                 label: label.into(),
             }
         } else {
+            println!("Received {}", token);
             panic!("This function shouldn't have been called");
         }
     }
@@ -308,6 +309,7 @@ impl FunctionLiteral {
         let params = Self::parse_function_params(parser, &start_pos)?;
 
         if !parser.expect_peek(&dummy_token(TokenKind::LCurly)) {
+            println!("Whoops {}", parser.lexer.curr_col());
             return Err(Box::new(FuncError::new(
                 start_pos,
                 FuncIssue::BodyIncorrectlyOpened,
@@ -359,7 +361,7 @@ impl FunctionLiteral {
         if !parser.expect_peek(&dummy_token(TokenKind::RParen)) {
             return Err(Box::new(FuncError::new(
                 start.clone(),
-                FuncIssue::BodyIncorrectlyClosed,
+                FuncIssue::DefIncorrectlyClosed,
                 Some(parser.lexer.curr_pos()),
                 parser.lexer.curr_col(),
             )));

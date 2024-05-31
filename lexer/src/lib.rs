@@ -182,11 +182,10 @@ impl Lexer {
 
         let kind = self.token_kind();
 
-        let tok = Token {
+        Token {
             kind,
             span: self.make_span(start),
-        };
-        tok
+        }
     }
 
     fn peek(&self) -> char {

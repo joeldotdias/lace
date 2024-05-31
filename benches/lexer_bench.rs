@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use lace_lexer::{Lexer, token::Token};
+use lace_lexer::{token::kind::TokenKind, Lexer};
 
 const LEXABLES: &str = r#"
         let five = 5;
@@ -35,7 +35,7 @@ fn provide_lex(n: u64) {
         let mut lex = Lexer::new(LEXABLES.into());
         loop {
             let tok = lex.next_token();
-            if tok == Token::Eof {
+            if tok.kind == TokenKind::Eof {
                 break;
             }
         }

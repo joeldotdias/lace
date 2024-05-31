@@ -1,4 +1,4 @@
-use std::{path::PathBuf, u32};
+use std::path::PathBuf;
 
 use errors::{BadExpectations, ParserError};
 use lace_lexer::{
@@ -217,8 +217,8 @@ impl Parser {
                     return;
                 }
                 let (schar, echar) = err.width();
-                let prn = (&self.lexer.input
-                    [(self.lexer.line_breaks[sline - 1])..(self.lexer.line_breaks[eline] - 1)])
+                let prn = self.lexer.input
+                    [(self.lexer.line_breaks[sline - 1])..(self.lexer.line_breaks[eline] - 1)]
                     .iter()
                     .collect::<String>();
                 let width = prn.len();
@@ -238,7 +238,11 @@ impl Parser {
                 println!("{header}");
                 println!("{: <1$}\x1b[94m | \x1b[0m", "", num_len as usize);
                 prn.lines().for_each(|line| {
-                    println!("\x1b[94m{curr_line} |\x1b[0m\t{line}");
+                    let spaces = num_len - (curr_line.checked_ilog10().unwrap_or(0) + 1);
+                    println!(
+                        "{: <1$}\x1b[94m{curr_line} | \x1b[0m\t{line}",
+                        "", spaces as usize
+                    );
                     curr_line += 1;
                 });
                 println!(

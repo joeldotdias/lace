@@ -148,7 +148,7 @@ impl ParserError for IncompleteConditional {
 pub enum FuncIssue {
     FuncMissingParens,
     BodyIncorrectlyOpened,
-    BodyIncorrectlyClosed,
+    DefIncorrectlyClosed,
 }
 
 impl Display for FuncIssue {
@@ -158,7 +158,9 @@ impl Display for FuncIssue {
                 write!(f, "Expected parentheses after function definition")
             }
             FuncIssue::BodyIncorrectlyOpened => write!(f, "Function body wasn't opened properly"),
-            FuncIssue::BodyIncorrectlyClosed => write!(f, "Function body wasn't closed properly"),
+            FuncIssue::DefIncorrectlyClosed => {
+                write!(f, "Function definition wasn't closed properly")
+            }
         }
     }
 }
@@ -196,7 +198,7 @@ impl ParserError for FuncError {
             FuncIssue::BodyIncorrectlyOpened => {
                 (self.start.start_col - 1, check_end_col!(&self) + 3)
             }
-            FuncIssue::BodyIncorrectlyClosed => (self.start.start_col - 1, check_end_col!(&self)),
+            FuncIssue::DefIncorrectlyClosed => (self.start.start_col - 1, check_end_col!(&self)),
         }
     }
 
@@ -237,6 +239,26 @@ impl From<Token> for ExpectedIdent {
 impl ParserError for ExpectedIdent {
     fn emit_err(&self) -> String {
         format!("Expected an identifier, received {}", self.found)
+    }
+
+    fn err_head(&self) -> String {
+        format!(
+            "\x1b[94m--> At {}:{}\x1b[0m",
+            self.found.span.start_line,
+            self.found.span.start_col + 1
+        )
+    }
+
+    fn range(&self) -> (usize, usize) {
+        (self.found.span.start_line, self.found.span.end_line)
+    }
+
+    fn width(&self) -> (usize, usize) {
+        (self.found.span.start_col, self.found.span.end_col)
+    }
+
+    fn check_false_illegal(&self) -> bool {
+        self.found.is_actually_legal()
     }
 }
 

@@ -1,7 +1,6 @@
 pub mod kind;
 pub mod span;
 
-use core::panic;
 use std::fmt::Display;
 
 use kind::TokenKind;

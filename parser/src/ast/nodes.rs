@@ -82,13 +82,16 @@ impl PrimitiveNode {
                 match kind {
                     LiteralKind::Int => match val.parse::<i64>() {
                         Ok(val) => Ok(PrimitiveNode::IntegerLiteral(val)),
-                        Err(_) => Err(Box::new(ExpectedNumber::new(NumKind::Int, val.to_string()))),
+                        Err(_) => Err(Box::new(ExpectedNumber::new(
+                            NumKind::Int,
+                            parser.curr_token.clone(),
+                        ))),
                     },
                     LiteralKind::Float => match val.parse::<f64>() {
                         Ok(val) => Ok(PrimitiveNode::FloatLiteral(val)),
                         Err(_) => Err(Box::new(ExpectedNumber::new(
                             NumKind::Float,
-                            val.to_string(),
+                            parser.curr_token.clone(),
                         ))),
                     },
                     LiteralKind::Char { terminated } => match terminated {

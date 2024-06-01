@@ -3,7 +3,7 @@ pub mod statement;
 
 use std::fmt::Display;
 
-use lace_lexer::token::{dummy_token, kind::TokenKind, Token};
+use lace_lexer::token::{dummy_token, kind::TokenKind, span::dummy_span, Token};
 use nodes::{
     ArrayLiteral, ConditionalOperator, FunctionCall, FunctionLiteral, HashLiteral, IdentNode,
     IndexAccess, InfixOperator, PrefixOperator, PrimitiveNode,
@@ -129,6 +129,7 @@ impl ExpressionKind {
     }
 
     fn parse_grouped_expr(parser: &mut Parser) -> Result<ExpressionKind, Box<dyn ParserError>> {
+        let start = parser.lexer.curr_pos();
         parser.next_token();
 
         let expr = ExpressionKind::parse(parser, Precedence::Lowest);
@@ -136,7 +137,11 @@ impl ExpressionKind {
         if parser.expect_peek(&dummy_token(TokenKind::RParen)) {
             expr
         } else {
-            Err(Box::new(ExprError::from(None)))
+            Err(Box::new(ExprError::new(
+                start,
+                Some(parser.lexer.curr_pos()),
+                parser.lexer.curr_col(),
+            )))
         }
     }
 
@@ -152,15 +157,21 @@ impl ExpressionKind {
 
         parser.next_token();
         expr_list.push(ExpressionKind::parse(parser, Precedence::Lowest)?);
+        let mut start = dummy_span();
 
         while parser.peek_token_is(&TokenKind::Comma) {
             parser.next_token();
+            start = parser.lexer.curr_pos();
             parser.next_token();
             expr_list.push(ExpressionKind::parse(parser, Precedence::Lowest)?);
         }
 
         if !parser.expect_peek(end) {
-            Err(Box::new(ExprError::from(None)))
+            Err(Box::new(ExprError::new(
+                start,
+                Some(parser.lexer.curr_pos()),
+                parser.lexer.curr_col(),
+            )))
         } else {
             Ok(expr_list)
         }

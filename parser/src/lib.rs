@@ -212,11 +212,12 @@ impl Parser {
         self.errors.iter().for_each(|err| {
             if !err.check_false_illegal() {
                 let header = err.err_head();
+                let (schar, echar) = err.width();
                 let (sline, eline) = err.range();
                 if sline == 0 {
                     return;
                 }
-                let (schar, echar) = err.width();
+
                 let prn = self.lexer.input
                     [(self.lexer.line_breaks[sline - 1])..(self.lexer.line_breaks[eline] - 1)]
                     .iter()

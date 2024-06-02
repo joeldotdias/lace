@@ -7,7 +7,9 @@ edition = "2021"
 members = [
     "lexer",
     "parser",
-    "eval", "compiler",
+    "eval",
+    "compiler",
+    "vm",
 ]
 
 [dependencies]

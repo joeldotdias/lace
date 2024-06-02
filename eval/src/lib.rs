@@ -13,7 +13,7 @@ use lace_parser::{
     ast::{
         nodes::{ConditionalOperator, HashLiteral, IdentNode, IndexAccess, PrimitiveNode},
         statement::{BlockStatement, Statement},
-        ExpressionKind, Program,
+        Expression, Program,
     },
     Parser,
 };
@@ -104,15 +104,15 @@ impl Eval {
         }
     }
 
-    fn eval_expression(&mut self, expression: ExpressionKind) -> Object {
+    fn eval_expression(&mut self, expression: Expression) -> Object {
         match expression {
-            ExpressionKind::Identifier(ident) => self.eval_ident(ident),
-            ExpressionKind::Primitive(primitive) => Self::eval_primitive(primitive),
-            ExpressionKind::Unary(prefix) => {
+            Expression::Identifier(ident) => self.eval_ident(ident),
+            Expression::Primitive(primitive) => Self::eval_primitive(primitive),
+            Expression::Unary(prefix) => {
                 let right = self.eval_expression(*prefix.right_expr);
                 Self::eval_prefix(&prefix.operator, &right)
             }
-            ExpressionKind::Binary(infix) => {
+            Expression::Binary(infix) => {
                 let (left, right) = (
                     self.eval_expression(*infix.left_expr),
                     self.eval_expression(*infix.right_expr),
@@ -120,8 +120,8 @@ impl Eval {
 
                 Self::eval_infix(&infix.operator, left, right)
             }
-            ExpressionKind::Conditional(conditional) => self.eval_conditional(conditional),
-            ExpressionKind::FunctionDef(func) => {
+            Expression::Conditional(conditional) => self.eval_conditional(conditional),
+            Expression::FunctionDef(func) => {
                 let params = func.params;
                 let body = func.body;
 
@@ -131,7 +131,7 @@ impl Eval {
                     environment: Rc::clone(&self.environment),
                 })
             }
-            ExpressionKind::FunctionCall(fn_call) => {
+            Expression::FunctionCall(fn_call) => {
                 let function = self.eval_expression(*fn_call.function);
                 if function.errored() {
                     return function;
@@ -144,7 +144,7 @@ impl Eval {
 
                 self.apply_func(function, args)
             }
-            ExpressionKind::Array(arr) => {
+            Expression::Array(arr) => {
                 let elements = self.eval_expressions(arr.elements);
                 if elements.len() == 1 && elements[0].errored() {
                     elements[0].clone()
@@ -152,8 +152,8 @@ impl Eval {
                     Object::Array(elements)
                 }
             }
-            ExpressionKind::ArrIndex(index_access) => self.eval_index_expr(index_access),
-            ExpressionKind::HashMapLiteral(hmap) => self.eval_hashmap_expr(hmap),
+            Expression::ArrIndex(index_access) => self.eval_index_expr(index_access),
+            Expression::HashMapLiteral(hmap) => self.eval_hashmap_expr(hmap),
         }
     }
 
@@ -286,7 +286,7 @@ impl Eval {
         }
     }
 
-    fn eval_expressions(&mut self, expressions: Vec<ExpressionKind>) -> Vec<Object> {
+    fn eval_expressions(&mut self, expressions: Vec<Expression>) -> Vec<Object> {
         let mut res = Vec::new();
 
         for expression in expressions {

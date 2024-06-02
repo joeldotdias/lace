@@ -9,7 +9,7 @@ use crate::{
     ast::{
         nodes::{IdentNode, PrimitiveNode},
         statement::{LetStatement, SourceStatement, Statement},
-        ExpressionKind,
+        Expression,
     },
     Parser,
 };
@@ -54,14 +54,14 @@ fn will_you_parse_let() {
                 token: dummy_token(TokenKind::Ident { label: "x".into() }),
                 label: "x".to_string(),
             },
-            val: ExpressionKind::Primitive(PrimitiveNode::IntegerLiteral(5)),
+            val: Expression::Primitive(PrimitiveNode::IntegerLiteral(5)),
         }),
         Statement::Assignment(LetStatement {
             name: IdentNode {
                 token: dummy_token(TokenKind::Ident { label: "y".into() }),
                 label: "y".to_string(),
             },
-            val: ExpressionKind::Primitive(PrimitiveNode::IntegerLiteral(10)),
+            val: Expression::Primitive(PrimitiveNode::IntegerLiteral(10)),
         }),
         Statement::Assignment(LetStatement {
             name: IdentNode {
@@ -70,7 +70,7 @@ fn will_you_parse_let() {
                 }),
                 label: "flag".to_string(),
             },
-            val: ExpressionKind::Primitive(PrimitiveNode::BooleanLiteral(false)),
+            val: Expression::Primitive(PrimitiveNode::BooleanLiteral(false)),
         }),
         Statement::Assignment(LetStatement {
             name: IdentNode {
@@ -79,7 +79,7 @@ fn will_you_parse_let() {
                 }),
                 label: "foobar".to_string(),
             },
-            val: ExpressionKind::Identifier(IdentNode {
+            val: Expression::Identifier(IdentNode {
                 token: dummy_token(TokenKind::Ident {
                     label: "y".to_string(),
                 }),
@@ -121,7 +121,7 @@ fn will_you_parse_source() {
                 token: dummy_token(TokenKind::Ident { label: "x".into() }),
                 label: "x".to_string(),
             },
-            val: ExpressionKind::Primitive(PrimitiveNode::IntegerLiteral(5)),
+            val: Expression::Primitive(PrimitiveNode::IntegerLiteral(5)),
         }),
         Statement::Source(SourceStatement {
             path: PathBuf::from("path/to/source"),
@@ -131,7 +131,7 @@ fn will_you_parse_source() {
                 token: dummy_token(TokenKind::Ident { label: "y".into() }),
                 label: "y".to_string(),
             },
-            val: ExpressionKind::Primitive(PrimitiveNode::IntegerLiteral(10)),
+            val: Expression::Primitive(PrimitiveNode::IntegerLiteral(10)),
         }),
     ];
 

@@ -5,7 +5,7 @@
 
 </div>
 
-Expanding on Thorsten Ball's Interpreter book.
+Expanding on Thorsten Ball's ![Interpreter book](https://interpreterbook.com).
 
 ## Current state
 ### Running code

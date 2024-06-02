@@ -1,6 +1,6 @@
 use std::{fmt::Display, usize};
 
-use lace_lexer::token::{kind::TokenKind, span::Span, Token};
+use lace_lexer::token::{span::Span, Token};
 
 macro_rules! build_err_head {
     ($name:tt, $($tok:ident).+) => {

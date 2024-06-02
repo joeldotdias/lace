@@ -9,7 +9,7 @@ use lace_lexer::{
 use crate::ast::{
     nodes::IdentNode,
     statement::{LetStatement, ReturnStatement, SourceStatement, Statement},
-    ExpressionKind, Precedence, Program,
+    Expression, Precedence, Program,
 };
 
 pub mod ast;
@@ -89,7 +89,7 @@ impl Parser {
 
         self.next_token();
 
-        let mut val = match ExpressionKind::parse(self, Precedence::Lowest) {
+        let mut val = match Expression::parse(self, Precedence::Lowest) {
             Ok(val) => val,
             Err(err) => {
                 self.found_err(err);
@@ -97,7 +97,7 @@ impl Parser {
             }
         };
 
-        if let ExpressionKind::FunctionDef(literal) = &mut val {
+        if let Expression::FunctionDef(literal) = &mut val {
             literal.name = Some(name.token.to_string());
         };
 
@@ -111,7 +111,7 @@ impl Parser {
     fn parse_return(&mut self) -> Option<ReturnStatement> {
         self.next_token();
 
-        let return_val = match ExpressionKind::parse(self, Precedence::Lowest) {
+        let return_val = match Expression::parse(self, Precedence::Lowest) {
             Ok(val) => val,
             Err(err) => {
                 self.found_err(err);
@@ -131,9 +131,9 @@ impl Parser {
     fn parse_source(&mut self) -> Option<SourceStatement> {
         self.next_token();
 
-        let sourceable = match ExpressionKind::parse(self, Precedence::Lowest) {
+        let sourceable = match Expression::parse(self, Precedence::Lowest) {
             Ok(e) => match e {
-                ExpressionKind::Primitive(p) => match p {
+                Expression::Primitive(p) => match p {
                     ast::nodes::PrimitiveNode::IntegerLiteral(_) => todo!(),
                     ast::nodes::PrimitiveNode::FloatLiteral(_) => todo!(),
                     ast::nodes::PrimitiveNode::CharLiteral(_) => todo!(),
@@ -157,8 +157,8 @@ impl Parser {
         Some(SourceStatement { path })
     }
 
-    fn parse_expression(&mut self) -> Option<ExpressionKind> {
-        let expr = ExpressionKind::parse(self, Precedence::Lowest);
+    fn parse_expression(&mut self) -> Option<Expression> {
+        let expr = Expression::parse(self, Precedence::Lowest);
 
         if self.peek_token_is(&TokenKind::Semicolon) {
             self.next_token();

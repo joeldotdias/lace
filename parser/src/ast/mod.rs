@@ -11,8 +11,8 @@ use nodes::{
 use statement::Statement;
 
 use crate::{
-    errors::{ExprError, NoPrefixParser, ParserError},
-    Parser,
+    errors::{ExprError, NoPrefixParser},
+    Parser, ParserResult,
 };
 
 #[derive(Default)]
@@ -64,10 +64,7 @@ impl Display for Expression {
 }
 
 impl Expression {
-    pub fn parse(
-        parser: &mut Parser,
-        precedence: Precedence,
-    ) -> Result<Expression, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser, precedence: Precedence) -> ParserResult<Expression> {
         let mut left_expr = match &parser.curr_token.kind {
             TokenKind::Ident { label: _ } => IdentNode::parse(parser).map(Expression::Identifier),
             TokenKind::Literal { kind: _, val: _ } | TokenKind::False | TokenKind::True => {
@@ -125,7 +122,7 @@ impl Expression {
         Ok(left_expr)
     }
 
-    fn parse_grouped_expr(parser: &mut Parser) -> Result<Expression, Box<dyn ParserError>> {
+    fn parse_grouped_expr(parser: &mut Parser) -> ParserResult<Expression> {
         let start = parser.lexer.curr_pos();
         parser.next_token();
 
@@ -142,10 +139,7 @@ impl Expression {
         }
     }
 
-    pub fn parse_expr_list(
-        parser: &mut Parser,
-        end: &Token,
-    ) -> Result<Vec<Expression>, Box<dyn ParserError>> {
+    pub fn parse_expr_list(parser: &mut Parser, end: &Token) -> ParserResult<Vec<Expression>> {
         let mut expr_list = Vec::new();
         if parser.peek_token_is(&end.kind) {
             parser.next_token();

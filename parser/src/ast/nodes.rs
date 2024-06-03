@@ -12,9 +12,9 @@ use crate::{
     ast::{statement::BlockStatement, Expression, Precedence},
     errors::{
         CondIssue, ExpectedIdent, ExpectedNumber, FuncError, FuncIssue, IncompleteConditional,
-        NoPrefixParser, NumKind, ParserError, UnterminatedKind, UnterminatedLiteral,
+        NoPrefixParser, NumKind, UnterminatedKind, UnterminatedLiteral,
     },
-    Parser,
+    Parser, ParserResult,
 };
 
 #[derive(PartialEq, Debug, Clone)]
@@ -42,7 +42,7 @@ impl IdentNode {
         }
     }
 
-    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser) -> ParserResult<Self> {
         if let TokenKind::Ident { label } = &parser.curr_token.kind {
             Ok(Self {
                 token: parser.curr_token.clone(),
@@ -76,7 +76,7 @@ impl Display for PrimitiveNode {
 }
 
 impl PrimitiveNode {
-    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser) -> ParserResult<Self> {
         match &parser.curr_token.kind {
             TokenKind::Literal { kind, val } => {
                 match kind {
@@ -134,7 +134,7 @@ impl PrefixOperator {
         }
     }
 
-    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser) -> ParserResult<Self> {
         let token = parser.curr_token.clone();
         parser.next_token();
         let right = Expression::parse(parser, Precedence::Prefix)?;
@@ -169,7 +169,7 @@ impl InfixOperator {
         }
     }
 
-    pub fn parse(parser: &mut Parser, left_expr: Expression) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser, left_expr: Expression) -> ParserResult<Self> {
         let token = parser.curr_token.clone();
         let precedence = parser.curr_precedence();
 
@@ -206,7 +206,7 @@ impl Display for ConditionalOperator {
 }
 
 impl ConditionalOperator {
-    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser) -> ParserResult<Self> {
         let start_pos = parser.lexer.curr_pos();
         if !parser.expect_peek(&dummy_token(TokenKind::LParen)) {
             return Err(Box::new(IncompleteConditional::new(
@@ -293,7 +293,7 @@ impl Display for FunctionLiteral {
 }
 
 impl FunctionLiteral {
-    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser) -> ParserResult<Self> {
         let start_pos = parser.lexer.curr_pos();
         let name = Self::parse_function_name(parser);
 
@@ -334,10 +334,7 @@ impl FunctionLiteral {
         name
     }
 
-    fn parse_function_params(
-        parser: &mut Parser,
-        start: &Span,
-    ) -> Result<Vec<IdentNode>, Box<dyn ParserError>> {
+    fn parse_function_params(parser: &mut Parser, start: &Span) -> ParserResult<Vec<IdentNode>> {
         let mut idents = Vec::<IdentNode>::new();
 
         if parser.peek_token_is(&TokenKind::RParen) {
@@ -391,7 +388,7 @@ impl Display for FunctionCall {
 }
 
 impl FunctionCall {
-    pub fn parse(parser: &mut Parser, function: Expression) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser, function: Expression) -> ParserResult<Self> {
         let args = Expression::parse_expr_list(parser, &dummy_token(TokenKind::RParen))?;
 
         Ok(FunctionCall {
@@ -419,7 +416,7 @@ impl Display for ArrayLiteral {
 }
 
 impl ArrayLiteral {
-    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser) -> ParserResult<Self> {
         let elements = Expression::parse_expr_list(parser, &dummy_token(TokenKind::RBracket))?;
         Ok(Self { elements })
     }
@@ -437,7 +434,7 @@ impl Display for IndexAccess {
     }
 }
 impl IndexAccess {
-    pub fn parse(parser: &mut Parser, left_expr: Expression) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser, left_expr: Expression) -> ParserResult<Self> {
         parser.next_token();
         let index = Expression::parse(parser, Precedence::Lowest)?;
         if !parser.expect_peek(&dummy_token(TokenKind::RBracket)) {
@@ -473,7 +470,7 @@ impl Display for HashLiteral {
 }
 
 impl HashLiteral {
-    pub fn parse(parser: &mut Parser) -> Result<Self, Box<dyn ParserError>> {
+    pub fn parse(parser: &mut Parser) -> ParserResult<Self> {
         let mut pairs = Vec::new();
 
         while !parser.peek_token_is(&TokenKind::RCurly) {

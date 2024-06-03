@@ -3,3 +3,5 @@ docs/examples/basic.lace
 docs/examples/new.lace
 docs/examples/sourceable.lace
 /trials
+/compiler
+/vm

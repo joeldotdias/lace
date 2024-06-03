@@ -3,6 +3,14 @@ name = "lace"
 version = "0.1.0"
 edition = "2021"
 
+exclude = [
+    ".gitignore",
+    "docs/**",
+    "public/**"
+    "benches/**",
+    "trials/**",
+]
+
 [workspace]
 members = [
     "lexer",

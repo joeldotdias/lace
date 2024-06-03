@@ -18,6 +18,8 @@ pub mod errors;
 #[cfg(test)]
 mod tests;
 
+type ParserResult<T> = Result<T, Box<dyn ParserError>>;
+
 pub struct Parser {
     pub lexer: Lexer,
     pub curr_token: Token,

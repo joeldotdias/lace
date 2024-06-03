@@ -4,10 +4,25 @@ use lace_eval::Eval;
 use lace_lexer::Lexer;
 use lace_parser::Parser;
 
+macro_rules! check_ext {
+    ($source:expr) => {
+        let ext = &$source.extension();
+        match ext {
+            Some(a) => {
+                if a.to_str() != Some("lace") {
+                    return Err("Expected a .lace file".to_string());
+                }
+            }
+            None => return Err("Expected a .lace file".to_string()),
+        }
+    };
+}
 pub fn run_interpreter(source: PathBuf) -> Result<(), String> {
     if !source.is_file() {
         return Err(format!("Couldn't find {:?}", source));
     }
+
+    check_ext!(&source);
 
     let code = match fs::read_to_string(&source) {
         Ok(code) => code,

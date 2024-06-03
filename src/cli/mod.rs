@@ -25,7 +25,11 @@ impl From<Vec<String>> for InterpreterArgs {
 impl InterpreterArgs {
     pub fn run(&self) {
         match &self.file {
-            Some(file_path) => interpretter::run_interpreter(file_path.clone()).unwrap(),
+            Some(file_path) => {
+                if let Err(err) = interpretter::run_interpreter(file_path.clone()) {
+                    eprintln!("{err}");
+                }
+            }
             None => repl::run_repl(),
         }
     }

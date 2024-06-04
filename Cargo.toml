@@ -6,7 +6,7 @@ edition = "2021"
 exclude = [
     ".gitignore",
     "docs/**",
-    "public/**"
+    "public/**",
     "benches/**",
     "trials/**",
 ]
@@ -16,8 +16,6 @@ members = [
     "lexer",
     "parser",
     "eval",
-    "compiler",
-    "vm",
 ]
 
 [dependencies]

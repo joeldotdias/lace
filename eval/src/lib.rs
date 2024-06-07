@@ -2,7 +2,7 @@ pub mod environment;
 pub mod lace_lib;
 pub mod object;
 
-use std::{cell::RefCell, collections::HashMap, fs, rc::Rc};
+use std::{self, cell::RefCell, collections::HashMap, fs, rc::Rc};
 
 use crate::{environment::Environment, object::Object};
 use lace_lexer::{
@@ -81,13 +81,20 @@ impl Eval {
             }
             Statement::Expression(expr) => self.eval_expression(expr),
             Statement::Source(sourceable) => {
-                let code = match fs::read_to_string(&sourceable.path) {
+                let mut fpath = std::env::current_dir()
+                    .unwrap()
+                    .to_str()
+                    .expect("") // TODO provide some insight into what went wrong
+                    .to_owned();
+                fpath.push('/');
+                fpath.push_str(sourceable.path.to_str().unwrap());
+                fpath.push_str(".lace");
+                let code = match fs::read_to_string(fpath.clone()) {
                     Ok(code) => code,
-                    Err(_) => {
-                        return Object::Error(format!(
-                            "Failed to open {}",
-                            &sourceable.path.to_str().unwrap()
-                        ));
+                    Err(err) => {
+                        println!("{:?}", fpath);
+                        eprintln!("{err}");
+                        std::process::exit(1);
                     }
                 };
 
@@ -413,6 +420,7 @@ impl Eval {
 
     pub fn eval_str_infix_expr(operator: &Token, left: String, right: String) -> Object {
         match operator.kind {
+            TokenKind::Equal => Object::Boolean(left == right),
             TokenKind::Plus => Object::Str(format!("{}{}", left, right)),
             TokenKind::Minus => {
                 if left.ends_with(&right) {

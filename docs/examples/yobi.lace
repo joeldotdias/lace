@@ -1,0 +1,17 @@
+let binsrch = fn(haystack, needle, high, low) {
+    if(low > high) {
+        return -1;
+    }
+
+    let mid = low + (high - low) / 2;
+
+    if(haystack[mid] == needle) {
+        return mid;
+    }
+
+    if(arr[mid] > needle) {
+        binsrch(haystack, needle, mid - 1, low)
+    } else {
+        binsrch(haystack, needle, high, mid + 1)
+    }
+}

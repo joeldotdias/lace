@@ -1,0 +1,6 @@
+source("yobi.lace")
+
+let arr = [1,2,3,4,5,6];
+
+write(binsrch(arr, 4, len(arr) - 1, 0))
+write(binsrch(arr, 7, len(arr) - 1, 0))
